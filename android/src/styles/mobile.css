@@ -1,0 +1,61 @@
+/* Android-specific mobile styles */
+
+/* Safe area CSS custom properties from Capacitor */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+  --sar: env(safe-area-inset-right);
+}
+
+/* Disable text selection on non-input elements for touch */
+[data-platform="android"] .session-message {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+[data-platform="android"] .session-message code,
+[data-platform="android"] .session-message pre {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Minimum touch target size */
+[data-platform="android"] button,
+[data-platform="android"] [role="button"],
+[data-platform="android"] a {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Prevent pull-to-refresh on Android */
+html {
+  overscroll-behavior: none;
+}
+
+/* Viewport height fix for virtual keyboard */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Mobile breakpoint: hide desktop sidebar, show mobile nav */
+@media (max-width: 767px) {
+  [data-component="sidebar"] {
+    display: none !important;
+  }
+
+  [data-component="mobile-tab-bar"] {
+    display: flex !important;
+  }
+
+  [data-component="main-content"] {
+    width: 100% !important;
+    height: calc(100dvh - var(--sab, 0px) - 56px) !important;
+  }
+}

@@ -42,7 +42,7 @@ jobs:
 
       - name: 🔄 Capacitor sync
         working-directory: android
-        run: npx cap sync android
+        run: bunx --bun cap sync android
 
       - name: 🏗️ Build debug APK
         working-directory: android/android

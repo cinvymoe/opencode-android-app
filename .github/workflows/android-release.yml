@@ -47,7 +47,7 @@ jobs:
 
       - name: 🔄 Capacitor sync
         working-directory: android
-        run: npx cap sync android
+        run: bunx --bun cap sync android
 
       - name: 🔐 Generate Android signing files
         working-directory: android/android

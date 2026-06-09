@@ -20,7 +20,6 @@ import { createMediaQuery } from "@solid-primitives/media"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 import { debounce } from "@solid-primitives/scheduled"
 import { useLocal } from "@/context/local"
-import { usePlatform } from "@/context/platform"
 import { selectionFromLines, useFile, type FileSelection, type SelectedLineRange } from "@/context/file"
 import { createStore } from "solid-js/store"
 import { ResizeHandle } from "@opencode-ai/ui/resize-handle"
@@ -29,7 +28,7 @@ import { Tabs } from "@opencode-ai/ui/tabs"
 import { createAutoScroll } from "@opencode-ai/ui/hooks"
 import { previewSelectedLines } from "@opencode-ai/ui/pierre/selection-bridge"
 import { Button } from "@opencode-ai/ui/button"
-import { showToast } from "@opencode-ai/ui/toast"
+import { showToast } from "@/utils/toast"
 import { checksum } from "@opencode-ai/core/util/encode"
 import { useLocation, useSearchParams } from "@solidjs/router"
 import { NewSessionDesignView, NewSessionView, SessionHeader } from "@/components/session"
@@ -40,6 +39,7 @@ import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { usePrompt } from "@/context/prompt"
 import { useSDK } from "@/context/sdk"
+import { useServerSDK } from "@/context/server-sdk"
 import { useSettings } from "@/context/settings"
 import { useSync } from "@/context/sync"
 import { useTerminal } from "@/context/terminal"
@@ -55,6 +55,7 @@ import {
 import { MessageTimeline } from "@/pages/session/message-timeline"
 import { type DiffStyle, SessionReviewTab, type SessionReviewTabProps } from "@/pages/session/review-tab"
 import { useSessionLayout } from "@/pages/session/session-layout"
+import { useServer } from "@/context/server"
 import { syncSessionModel } from "@/pages/session/session-model-helpers"
 import { SessionSidePanel } from "@/pages/session/session-side-panel"
 import { TerminalPanel } from "@/pages/session/terminal-panel"
@@ -191,16 +192,16 @@ export default function Page() {
   const dialog = useDialog()
   const language = useLanguage()
   const sdk = useSDK()
+  const serverSDK = useServerSDK()
   const settings = useSettings()
   const prompt = usePrompt()
   const comments = useComments()
   const terminal = useTerminal()
+  const server = useServer()
   const [searchParams, setSearchParams] = useSearchParams<{ prompt?: string }>()
   const location = useLocation()
-  const { params, sessionKey, tabs, view } = useSessionLayout()
+  const { params, sessionKey, workspaceKey, tabs, view } = useSessionLayout()
   const newSessionDesign = createMemo(() => settings.general.newLayoutDesigns())
-  const platform = usePlatform()
-  const isMobile = createMemo(() => platform.platform === "android")
 
   createEffect(() => {
     if (!prompt.ready()) return
@@ -226,7 +227,6 @@ export default function Page() {
 
   const composer = createSessionComposerState()
 
-  const workspaceKey = createMemo(() => params.dir ?? "")
   const workspaceTabs = createMemo(() => layout.tabs(workspaceKey))
 
   createEffect(
@@ -242,6 +242,7 @@ export default function Page() {
           layout.handoff.clearTabs()
           return
         }
+        if (pending.scope !== server.scope()) return
 
         if (pending.id !== id) return
         layout.handoff.clearTabs()
@@ -389,7 +390,7 @@ export default function Page() {
   })
 
   const [followup, setFollowup] = persisted(
-    Persist.workspace(sdk.directory, "followup", ["followup.v1"]),
+    Persist.serverWorkspace(serverSDK.scope, sdk.directory, "followup", ["followup.v1"]),
     createStore<{
       items: Record<string, FollowupItem[] | undefined>
       failed: Record<string, string | undefined>
@@ -470,8 +471,6 @@ export default function Page() {
     return {
       queryKey: [...vcsKey(), mode] as const,
       enabled,
-      staleTime: Number.POSITIVE_INFINITY,
-      gcTime: 60 * 1000,
       queryFn: mode
         ? () =>
             sdk.client.vcs
@@ -638,7 +637,7 @@ export default function Page() {
       const stale = !cached
         ? false
         : (() => {
-            const info = getSessionPrefetch(directory, id)
+            const info = getSessionPrefetch(serverSDK.scope, directory, id)
             if (!info) return true
             return Date.now() - info.at > SESSION_PREFETCH_TTL
           })()
@@ -1710,61 +1709,15 @@ export default function Page() {
   )
 
   return (
-    <Show
-      when={!isMobile()}
-      fallback={
-        <div class="flex flex-col h-full" data-platform="android">
-          <div class="flex-1 min-h-0 overflow-hidden">
-            <Switch>
-              <Match when={params.id}>
-                <Show when={messagesReady()}>
-                  <MessageTimeline
-                    actions={actions}
-                    scroll={ui.scroll}
-                    onResumeScroll={resumeScroll}
-                    setScrollRef={setScrollRef}
-                    onScheduleScrollState={scheduleScrollState}
-                    onAutoScrollHandleScroll={autoScroll.handleScroll}
-                    onMarkScrollGesture={markScrollGesture}
-                    hasScrollGesture={hasScrollGesture}
-                    onUserScroll={markUserScroll}
-                    onHistoryScroll={historyLoader.onScrollerScroll}
-                    onAutoScrollInteraction={autoScroll.handleInteraction}
-                    shouldAnchorBottom={() =>
-                      !location.hash && !store.messageId && !ui.pendingMessage && !autoScroll.userScrolled()
-                    }
-                    centered={false}
-                    setContentRef={(el) => {
-                      content = el
-                      autoScroll.contentRef(el)
-
-                      const root = scroller
-                      if (root) scheduleScrollState(root)
-                    }}
-                    historyShift={historyLoader.shift()}
-                    userMessages={historyLoader.userMessages()}
-                    anchor={anchor}
-                    setRevealMessage={(fn) => {
-                      revealMessage = fn
-                    }}
-                  />
-                </Show>
-              </Match>
-              <Match when={true}>
-                <Show when={newSessionDesign()} fallback={<NewSessionView worktree={newSessionWorktree()} />}>
-                  <NewSessionDesignView>{composerRegion("inline")}</NewSessionDesignView>
-                </Show>
-              </Match>
-            </Switch>
-          </div>
-          <Show when={params.id || !newSessionDesign()}>{composerRegion("dock")}</Show>
-        </div>
-      }
-    >
-    <div class="relative bg-background-base size-full overflow-hidden flex flex-col">
+    <div class="relative size-full overflow-hidden flex flex-col">
       {sessionSync() ?? ""}
       <SessionHeader />
-      <div class="flex-1 min-h-0 flex flex-col md:flex-row">
+      <div
+        class="flex-1 min-h-0 flex flex-col md:flex-row "
+        classList={{
+          "gap-2 p-2": settings.general.newLayoutDesigns(),
+        }}
+      >
         <Show when={!isDesktop() && !!params.id}>
           <Tabs value={store.mobileTab} class="h-auto">
             <Tabs.List>
@@ -1796,12 +1749,18 @@ export default function Page() {
             "duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width] motion-reduce:transition-none":
               !size.active() && !ui.reviewSnap,
             "transition-[width]": !isV2NewSessionPage(),
+            "rounded-[10px] shadow-[var(--v2-elevation-raised)]": settings.general.newLayoutDesigns() && !!params.id,
           }}
           style={{
             width: sessionPanelWidth(),
           }}
         >
-          <div class="flex-1 min-h-0 overflow-hidden">
+          <div
+            class="flex-1 min-h-0 overflow-hidden"
+            classList={{
+              "rounded-[10px]": settings.general.newLayoutDesigns(),
+            }}
+          >
             <Switch>
               <Match when={params.id && mobileChanges()}>
                 <div class="relative h-full overflow-hidden">
@@ -1864,6 +1823,9 @@ export default function Page() {
           <Show when={desktopReviewOpen()}>
             <div onPointerDown={() => size.start()}>
               <ResizeHandle
+                classList={{
+                  "-right-1": settings.general.newLayoutDesigns(),
+                }}
                 direction="horizontal"
                 size={layout.session.width()}
                 min={450}
@@ -1894,6 +1856,5 @@ export default function Page() {
 
       <TerminalPanel />
     </div>
-    </Show>
   )
 }

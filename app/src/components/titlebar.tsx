@@ -29,6 +29,7 @@ import { useSettings } from "@/context/settings"
 import { WindowsAppMenu } from "./windows-app-menu"
 import { applyPath, backPath, forwardPath } from "./titlebar-history"
 import { useServerSync } from "@/context/server-sync"
+import { useRefreshAction } from "@/hooks/use-refresh-action"
 import { base64Encode } from "@opencode-ai/core/util/encode"
 import { ProjectAvatar } from "@opencode-ai/ui/v2/project-avatar-v2"
 import { displayName, getProjectAvatarSource, projectForSession } from "@/pages/layout/helpers"
@@ -412,6 +413,22 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
               setTabsAreOverflowing(tabScrollRef.scrollWidth > tabScrollRef.clientWidth)
             }
 
+            function RefreshButton() {
+              const { refresh, isRefreshing } = useRefreshAction()
+              return (
+                <IconButtonV2
+                  variant="ghost-muted"
+                  size="large"
+                  class="shrink-0"
+                  icon={<IconV2 name="refresh" />}
+                  onClick={refresh}
+                  disabled={isRefreshing()}
+                  classList={{ "animate-spin": isRefreshing() }}
+                  aria-label={language.t("common.refresh")}
+                 />
+               )
+             }
+
             return (
               <div
                 class="h-full flex-1 overflow-hidden flex flex-row items-center gap-1.5 pr-3 pt-2"
@@ -512,6 +529,7 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
                   />
                 </Show>
                 <div class="flex-1" />
+                <RefreshButton />
                 <TitlebarV2Right state={v2RightState()} />
                 <Show when={windows() && !electronWindows()}>
                   <div data-tauri-decorum-tb class="flex flex-row" />

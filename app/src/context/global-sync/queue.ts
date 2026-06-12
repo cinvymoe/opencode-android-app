@@ -1,3 +1,5 @@
+import { createSignal } from "solid-js"
+
 type QueueInput = {
   paused: () => boolean
   bootstrap: () => Promise<void>
@@ -10,6 +12,7 @@ export function createRefreshQueue(input: QueueInput) {
   let root = false
   let running = false
   let timer: ReturnType<typeof setTimeout> | undefined
+  const [isDraining, setIsDraining] = createSignal(false)
 
   const key = input.key ?? ((directory: string) => directory)
 
@@ -50,6 +53,7 @@ export function createRefreshQueue(input: QueueInput) {
   async function drain() {
     if (running) return
     running = true
+    setIsDraining(true)
     try {
       while (true) {
         if (input.paused()) return
@@ -66,6 +70,7 @@ export function createRefreshQueue(input: QueueInput) {
       }
     } finally {
       running = false
+      setIsDraining(false)
       // oxlint-disable-next-line no-unsafe-finally -- intentional: early return skips schedule() when paused
       if (input.paused()) return
       if (root || queued.size) schedule()
@@ -75,6 +80,7 @@ export function createRefreshQueue(input: QueueInput) {
   return {
     push,
     refresh,
+    isDraining,
     clear(directory: string) {
       queued.delete(key(directory))
     },

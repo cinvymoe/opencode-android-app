@@ -2,6 +2,7 @@ import type { Config, OpencodeClient, Path, Project, ProviderAuthResponse, Todo 
 import { showToast } from "@/utils/toast"
 import { getFilename } from "@opencode-ai/core/util/path"
 import { batch, getOwner, onCleanup, onMount, untrack } from "solid-js"
+import { makeEventListener } from "@solid-primitives/event-listener"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import type { InitError } from "../pages/error"
@@ -26,6 +27,7 @@ import { SESSION_RECENT_LIMIT } from "./global-sync/types"
 import { formatServerError } from "@/utils/server-errors"
 import { queryOptions, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/solid-query"
 import { createRefreshQueue } from "./global-sync/queue"
+import { createSyncStatus, type SyncStatus } from "./sync-status"
 import { directoryKey } from "./global-sync/utils"
 import { PathKey } from "@/utils/path-key"
 import { createDirSyncContext } from "./directory-sync"
@@ -210,6 +212,11 @@ export function createServerSyncContextInner(_serverSDK?: ServerSDK) {
     bootstrap: () => queryClient.fetchQuery({ queryKey: [serverSDK.scope, "bootstrap"] }),
     bootstrapInstance,
   })
+
+  const syncStatus = createSyncStatus(
+    () => serverSDK.status(),
+    () => queue.isDraining(),
+  )
 
   const children = createChildStoreManager({
     owner,
@@ -438,6 +445,14 @@ export function createServerSyncContextInner(_serverSDK?: ServerSDK) {
         void serverSDK.event.start()
       }, 0)
     }
+
+    makeEventListener(document, "visibilitychange", () => {
+      if (document.visibilityState !== "visible") return
+      const status = serverSDK.status()
+      if (status !== "connected") {
+        queue.refresh()
+      }
+    })
   })
 
   const projectApi = {
@@ -476,6 +491,7 @@ export function createServerSyncContextInner(_serverSDK?: ServerSDK) {
     peek: children.peek,
     disableMcp: children.disableMcp,
     queryOptions: queryOptionsApi,
+    syncStatus,
     // bootstrap,
     updateConfig: updateConfigMutation.mutateAsync,
     project: projectApi,

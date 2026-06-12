@@ -39,6 +39,7 @@ import { useGlobal } from "@/context/global"
 import { decode64 } from "@/utils/base64"
 import { ServerConnection, useServer } from "@/context/server"
 import { tabHref, useTabs, type Tab } from "@/context/tabs"
+import { useRefreshAction } from "@/hooks/use-refresh-action"
 
 type TauriDesktopWindow = {
   startDragging?: () => Promise<void>
@@ -535,6 +536,7 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
                   />
                 </Show>
                 <div class="flex-1" />
+                <RefreshButton />
                 <TitlebarV2Right state={v2RightState()} />
                 <Show when={windows() && !electronWindows()}>
                   <div data-tauri-decorum-tb class="flex flex-row" />
@@ -977,5 +979,25 @@ function ChannelIndicator() {
         </div>
       )}
     </>
+  )
+}
+
+function RefreshButton() {
+  const { refresh, isRefreshing } = useRefreshAction()
+  return (
+    <IconButtonV2
+      type="button"
+      variant="ghost-muted"
+      size="large"
+      class="shrink-0"
+      icon={
+        <span class={`flex size-4 items-center justify-center ${isRefreshing() ? "animate-spin" : ""}`}>
+          <IconV2 name="refresh" />
+        </span>
+      }
+      onClick={refresh}
+      disabled={isRefreshing()}
+      aria-label="Refresh"
+    />
   )
 }

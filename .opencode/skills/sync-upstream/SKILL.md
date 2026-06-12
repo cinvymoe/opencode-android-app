@@ -207,6 +207,91 @@ Key files to review (may have `isMobile` / `platform.platform === "android"` pat
 
 The upstream code significantly evolves these files each release, so android-specific UI accommodations (mobile-optimized layouts) may need to be rewritten rather than patch-applied.
 
+### 6c. Restore Android-specific features
+
+These features are android-only additions that upstream does not have. After syncing, re-apply them:
+
+#### SSE Connection Status Signal (`app/src/context/server-sdk.tsx`)
+
+Add a `status` signal tracking SSE connection state:
+
+```typescript
+import { batch, createSignal, onCleanup, onMount } from "solid-js"
+
+type SdkStatus = "disconnected" | "connecting" | "connected"
+const [status, setStatus] = createSignal<SdkStatus>("disconnected")
+```
+
+Update the SSE stream lifecycle to set status:
+- `start()` → `setStatus("connecting")`
+- First event received → `setStatus("connected")`
+- Heartbeat timeout / stream error / `stop()` → `setStatus("disconnected")`
+
+Export `status` in the return object.
+
+#### Queue Draining Signal (`app/src/context/global-sync/queue.ts`)
+
+Expose `isDraining` signal from the refresh queue:
+
+```typescript
+import { createSignal } from "solid-js"
+const [isDraining, setIsDraining] = createSignal(false)
+
+// In drain():
+setIsDraining(true)
+// ... drain logic ...
+setIsDraining(false)
+
+return { push, refresh, clear, dispose, isDraining }
+```
+
+#### Sync Status Context (`app/src/context/sync-status.tsx`)
+
+Create a derived status combining SSE connection + queue draining:
+
+```typescript
+import { createMemo } from "solid-js"
+
+export type SyncStatus = "idle" | "disconnected" | "connecting" | "syncing" | "synced"
+
+export function createSyncStatus(
+  serverStatus: () => "disconnected" | "connecting" | "connected",
+  isDraining: () => boolean
+): () => SyncStatus {
+  return createMemo<SyncStatus>(() => {
+    const status = serverStatus()
+    if (status === "disconnected") return "disconnected"
+    if (status === "connecting") return "connecting"
+    if (isDraining()) return "syncing"
+    return "idle"
+  })
+}
+```
+
+#### Sync Status Bar Component (`app/src/components/sync-status-bar.tsx`)
+
+Visual indicator for connection/sync state with auto-hide after sync completes.
+
+#### Refresh Action Hook (`app/src/hooks/use-refresh-action.ts`)
+
+Context-aware refresh: triggers bootstrap on Home, session sync on Session page.
+
+#### Visibility Change Handler (`app/src/context/server-sync.tsx`)
+
+In `onMount`, add a `visibilitychange` listener that triggers `queue.refresh()` when returning from background if not connected:
+
+```typescript
+makeEventListener(document, "visibilitychange", () => {
+  if (document.visibilityState !== "visible") return
+  const status = serverSDK.status()
+  if (status !== "connected") {
+    queue.refresh()
+  }
+})
+```
+
+Export `syncStatus` from `createServerSyncContextInner`.
+
 ## Step 7: Sync Config Files
 
 Copy updated package.json and TypeScript config files:

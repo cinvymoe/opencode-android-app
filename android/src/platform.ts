@@ -8,11 +8,22 @@ import pkg from "../package.json"
 
 const DEFAULT_SERVER_KEY = "opencode.android.defaultServer"
 
-function setupStatusBarObserver(): () => void {
+function setupStatusBarObserver(): void {
+  // Enable edge-to-edge by making status bar overlay the webview
+  StatusBar.setOverlaysWebView({ overlay: true }).catch((e) =>
+    console.warn("StatusBar.setOverlaysWebView failed:", e),
+  )
+
   const update = () => {
-    const colorScheme = document.documentElement.dataset.colorScheme
+    const el = document.documentElement
+    if (!el) return
+
+    const colorScheme = el.dataset.colorScheme
+    // Dark mode → light text, light mode → dark text
     const style = colorScheme === "dark" ? Style.Light : Style.Dark
-    StatusBar.setStyle({ style }).catch(() => {})
+    StatusBar.setStyle({ style }).catch((e) =>
+      console.warn("StatusBar.setStyle failed:", e),
+    )
   }
 
   update()
@@ -22,8 +33,7 @@ function setupStatusBarObserver(): () => void {
     attributes: true,
     attributeFilter: ["data-color-scheme"],
   })
-
-  return () => observer.disconnect()
+  // Observer lives for app lifetime — no cleanup needed
 }
 
 export async function createAndroidPlatform(): Promise<Platform> {

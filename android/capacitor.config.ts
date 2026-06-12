@@ -8,9 +8,6 @@ const config: CapacitorConfig = {
     androidScheme: "http",
   },
   plugins: {
-    StatusBar: {
-      style: "DARK",
-    },
     Keyboard: {
       resize: "body",
       resizeOnFullScreen: true,

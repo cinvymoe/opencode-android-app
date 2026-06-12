@@ -11,7 +11,7 @@ const DEFAULT_SERVER_KEY = "opencode.android.defaultServer"
 function setupStatusBarObserver(): () => void {
   const update = () => {
     const colorScheme = document.documentElement.dataset.colorScheme
-    const style = colorScheme === "dark" ? Style.Dark : Style.Light
+    const style = colorScheme === "dark" ? Style.Light : Style.Dark
     StatusBar.setStyle({ style }).catch(() => {})
   }
 
@@ -94,7 +94,7 @@ export async function createAndroidPlatform(): Promise<Platform> {
     },
 
     async setStatusBarStyle(style: "dark" | "light") {
-      await StatusBar.setStyle({ style: style === "dark" ? Style.Dark : Style.Light })
+      await StatusBar.setStyle({ style: style === "dark" ? Style.Light : Style.Dark })
     },
   }
 }

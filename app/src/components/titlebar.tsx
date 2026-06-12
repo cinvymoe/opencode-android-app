@@ -29,7 +29,6 @@ import { useSettings } from "@/context/settings"
 import { WindowsAppMenu } from "./windows-app-menu"
 import { applyPath, backPath, forwardPath } from "./titlebar-history"
 import { useServerSync } from "@/context/server-sync"
-import { useRefreshAction } from "@/hooks/use-refresh-action"
 import { base64Encode } from "@opencode-ai/core/util/encode"
 import { ProjectAvatar } from "@opencode-ai/ui/v2/project-avatar-v2"
 import { displayName, getProjectAvatarSource, projectForSession } from "@/pages/layout/helpers"
@@ -281,7 +280,8 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
 
             const matchRoute = (route: LayoutRoute) => {
               if (route.type === "home") return
-              if (route.type === "dir-new-sesssion") {
+              if (route.type === "draft") {
+                return tabsStore.find((item) => item.type === "draft" && item.draftID === route.draftID)
               }
               if (route.type === "session") {
                 const main = tabsStore.find(
@@ -413,22 +413,6 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
               setTabsAreOverflowing(tabScrollRef.scrollWidth > tabScrollRef.clientWidth)
             }
 
-            function RefreshButton() {
-              const { refresh, isRefreshing } = useRefreshAction()
-              return (
-                <IconButtonV2
-                  variant="ghost-muted"
-                  size="large"
-                  class="shrink-0"
-                  icon={<IconV2 name="refresh" />}
-                  onClick={refresh}
-                  disabled={isRefreshing()}
-                  classList={{ "animate-spin": isRefreshing() }}
-                  aria-label={language.t("common.refresh")}
-                 />
-               )
-             }
-
             return (
               <div
                 class="h-full flex-1 overflow-hidden flex flex-row items-center gap-1.5 pr-3 pt-2"
@@ -464,11 +448,33 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
                           refreshTabsAreOverflowing()
                         })
 
+                        const divider = () =>
+                          i() !== 0 && (
+                            <div class="w-[1.5px] h-3 shrink-0 rounded-full bg-[var(--v2-background-bg-layer-02)]" />
+                          )
+
+                        if (tab.type === "draft") {
+                          return (
+                            <>
+                              {divider()}
+                              <DraftTabItem
+                                ref={ref}
+                                href={tabHref(tab)}
+                                title={language.t("command.session.new")}
+                                active={currentTab() === tab}
+                                onNavigate={() => {
+                                  navigateTab(tab)
+                                  ref.scrollIntoView({ behavior: "instant" })
+                                }}
+                                onClose={() => tabsStoreActions.removeTab(i())}
+                              />
+                            </>
+                          )
+                        }
+
                         return (
                           <>
-                            {i() !== 0 && (
-                              <div class="w-[1.5px] h-3 shrink-0 rounded-full bg-[var(--v2-background-bg-layer-02)]" />
-                            )}
+                            {divider()}
                             <TabNavItem
                               ref={ref}
                               href={tabHref(tab)}
@@ -529,7 +535,6 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
                   />
                 </Show>
                 <div class="flex-1" />
-                <RefreshButton />
                 <TitlebarV2Right state={v2RightState()} />
                 <Show when={windows() && !electronWindows()}>
                   <div data-tauri-decorum-tb class="flex flex-row" />
@@ -800,7 +805,6 @@ function TabNavItem(props: {
     >
       <Show when={session.latest}>
         {(session) => {
-          console.log({ session: session() })
           const project = createMemo(() => projectForSession(session(), serverCtx()?.projects.list() ?? []))
 
           return (
@@ -866,6 +870,59 @@ function ProjectTabAvatar(props: {
       unread={state.unread()}
       loading={state.loading()}
     />
+  )
+}
+
+function DraftTabItem(props: {
+  ref?: HTMLDivElement
+  href: string
+  title: string
+  active?: boolean
+  onNavigate: () => void
+  onClose: () => void
+}) {
+  const closeTab = (event: MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    props.onClose()
+  }
+  return (
+    <div
+      ref={props.ref}
+      data-active={props.active}
+      class="group relative shrink-0 flex h-7 max-w-60 flex-row items-center gap-1.5 overflow-hidden rounded-[6px] bg-[var(--tab-bg)] pl-1.5 pr-8 whitespace-nowrap [--tab-bg:var(--v2-background-bg-deep)] hover:[--tab-bg:var(--v2-background-bg-layer-02)] data-[active='true']:[--tab-bg:var(--v2-overlay-simple-overlay-pressed)] focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--v2-border-border-focus)]"
+      onMouseDown={(event) => {
+        if (event.button !== 1) return
+        closeTab(event)
+      }}
+    >
+      <a
+        href={props.href}
+        onClick={(event) => {
+          event.preventDefault()
+          props.onNavigate()
+        }}
+        class="flex h-full min-w-0 flex-1 flex-row items-center gap-1.5 overflow-hidden text-[13px] font-medium leading-5 text-v2-text-text-faint group-data-[active='true']:text-[var(--v2-text-text-base)]"
+      >
+        <span class="flex size-4 shrink-0 rotate-90 items-center justify-center">
+          <IconV2 name="edit" />
+        </span>
+        <span class="truncate leading-5">{props.title}</span>
+      </a>
+      <div class="absolute right-0 inset-y-0 flex w-7 items-center justify-center">
+        <IconButtonV2
+          size="small"
+          variant="ghost-muted"
+          onMouseDown={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+          onClick={closeTab}
+          icon={<IconV2 name="xmark-small" />}
+          aria-label="Close tab"
+        />
+      </div>
+    </div>
   )
 }
 

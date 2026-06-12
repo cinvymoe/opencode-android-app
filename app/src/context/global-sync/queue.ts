@@ -83,6 +83,5 @@ export function createRefreshQueue(input: QueueInput) {
       clearTimeout(timer)
       timer = undefined
     },
-    isDraining: () => running || root,
   }
 }

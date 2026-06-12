@@ -63,8 +63,8 @@ import { useTheme, type ColorScheme } from "@opencode-ai/ui/theme/context"
 import { useCommand, type CommandOption } from "@/context/command"
 import { ConstrainDragXAxis, getDraggableId } from "@/utils/solid-dnd"
 import { DebugBar } from "@/components/debug-bar"
+import { HelpButton } from "@/components/help-button"
 import { Titlebar, type TitlebarUpdate } from "@/components/titlebar"
-import { SyncStatusBar } from "@/components/sync-status-bar"
 import { useDirectoryPicker } from "@/components/directory-picker"
 import { ServerConnection, useServer } from "@/context/server"
 import { useLanguage, type Locale } from "@/context/language"
@@ -2359,13 +2359,13 @@ export default function Layout(props: ParentProps) {
         <div class="relative bg-v2-background-bg-deep flex-1 min-h-0 min-w-0 flex flex-col select-none [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text">
           {autoselecting() ?? ""}
           <Titlebar update={titlebarUpdate} />
-          <SyncStatusBar status={serverSync.syncStatus} />
           <main class="flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-col items-start contain-strict">
             <Show when={!autoselecting.loading} fallback={<div class="size-full" />}>
               {props.children}
             </Show>
           </main>
           {import.meta.env.DEV && <DebugBar />}
+          <HelpButton />
           <ToastRegion v2={newDesign()} />
         </div>
       }
@@ -2519,6 +2519,7 @@ export default function Layout(props: ParentProps) {
           </div>
           {import.meta.env.DEV && <DebugBar />}
         </div>
+        <HelpButton />
         <ToastRegion v2={newDesign()} />
       </div>
     </Show>

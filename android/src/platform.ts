@@ -8,7 +8,27 @@ import pkg from "../package.json"
 
 const DEFAULT_SERVER_KEY = "opencode.android.defaultServer"
 
+function setupStatusBarObserver(): () => void {
+  const update = () => {
+    const colorScheme = document.documentElement.dataset.colorScheme
+    const style = colorScheme === "dark" ? Style.Dark : Style.Light
+    StatusBar.setStyle({ style }).catch(() => {})
+  }
+
+  update()
+
+  const observer = new MutationObserver(update)
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-color-scheme"],
+  })
+
+  return () => observer.disconnect()
+}
+
 export async function createAndroidPlatform(): Promise<Platform> {
+  setupStatusBarObserver()
+
   return {
     platform: "android",
     version: pkg.version,

@@ -8,30 +8,16 @@ import pkg from "../package.json"
 
 const DEFAULT_SERVER_KEY = "opencode.android.defaultServer"
 
-function applySafeAreaInsets(): void {
-  StatusBar.getInfo()
-    .then((info) => {
-      const height = info.height ?? 0
-      document.documentElement.style.setProperty("--sat", `${height}px`)
-    })
-    .catch((e) => {
-      console.warn("StatusBar.getInfo failed:", e)
-      document.documentElement.style.setProperty("--sat", "env(safe-area-inset-top, 24px)")
-    })
-}
-
 function setupStatusBarObserver(): void {
-  // Enable edge-to-edge by making status bar overlay the webview
-  StatusBar.setOverlaysWebView({ overlay: true })
-    .then(() => applySafeAreaInsets())
-    .catch((e) => console.warn("StatusBar.setOverlaysWebView failed:", e))
+  StatusBar.setOverlaysWebView({ overlay: true }).catch((e) =>
+    console.warn("StatusBar.setOverlaysWebView failed:", e),
+  )
 
   const update = () => {
     const el = document.documentElement
     if (!el) return
 
     const colorScheme = el.dataset.colorScheme
-    // Dark mode → light text, light mode → dark text
     const style = colorScheme === "dark" ? Style.Light : Style.Dark
     StatusBar.setStyle({ style }).catch((e) =>
       console.warn("StatusBar.setStyle failed:", e),
@@ -45,7 +31,6 @@ function setupStatusBarObserver(): void {
     attributes: true,
     attributeFilter: ["data-color-scheme"],
   })
-  // Observer lives for app lifetime — no cleanup needed
 }
 
 export async function createAndroidPlatform(): Promise<Platform> {

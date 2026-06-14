@@ -91,15 +91,16 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
   const electronWindows = createMemo(() => windows() && !tauriApi())
   const linux = createMemo(() => platform.platform === "desktop" && platform.os === "linux")
   const web = createMemo(() => platform.platform === "web")
+  const android = createMemo(() => platform.platform === "android")
   const zoom = () => platform.webviewZoom?.() ?? 1
   const titlebarZoom = () => (windows() ? Math.max(zoom(), minTitlebarZoom) : zoom())
   const counterZoom = () => (windows() && titlebarZoom() < 1 ? 1 / titlebarZoom() : 1)
   const minHeight = () => {
     const height = useV2Titlebar() ? v2TitlebarHeight : legacyTitlebarHeight
-    const sat = "var(--sat, 0px)"
-    if (mac()) return `calc(${height / zoom()}px + ${sat})`
-    if (windows()) return `calc(${height / Math.min(titlebarZoom(), 1)}px + ${sat})`
-    return `calc(${height}px + ${sat})`
+    if (mac()) return `${height / zoom()}px`
+    if (windows()) return `${height / Math.min(titlebarZoom(), 1)}px`
+    if (android()) return `calc(${height}px + var(--sat, 0px))`
+    return undefined
   }
   const windowsControlsWidth = () => `${windowsControlsBaseWidth / Math.max(titlebarZoom(), 1)}px`
 
@@ -232,12 +233,14 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
     <header
       classList={{
         "shrink-0 relative flex flex-row": true,
-        "h-9 bg-v2-background-bg-deep overflow-visible": useV2Titlebar(),
-        "h-10 bg-background-base overflow-hidden": !useV2Titlebar(),
+        "h-9 bg-v2-background-bg-deep overflow-visible": useV2Titlebar() && !android(),
+        "h-10 bg-background-base overflow-hidden": !useV2Titlebar() && !android(),
+        "bg-v2-background-bg-deep overflow-visible": useV2Titlebar() && android(),
+        "bg-background-base overflow-hidden": !useV2Titlebar() && android(),
       }}
       style={{
         "min-height": minHeight(),
-        "padding-top": "var(--sat)",
+        "padding-top": android() ? "var(--sat, 0px)" : undefined,
         "padding-left": mac() ? `${84 / zoom()}px` : 0,
         width: electronWindows() ? `env(titlebar-area-width, calc(100vw - ${windowsControlsWidth()}))` : undefined,
         "max-width": electronWindows()
@@ -418,10 +421,11 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
 
             return (
               <div
-                class="h-full flex-1 overflow-hidden flex flex-row items-center gap-1.5 pr-3 pt-2"
+                class="h-full flex-1 overflow-hidden flex flex-row items-center gap-1.5 pr-3"
                 classList={{
                   "pl-2": mac(),
                   "pl-4": !mac(),
+                  "pt-2": !android(),
                 }}
               >
                 <ChannelIndicator />

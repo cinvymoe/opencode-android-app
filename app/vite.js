@@ -40,15 +40,6 @@ export default [
   },
   isAndroid && {
     name: "opencode-android:entry",
-    config() {
-      return {
-        build: {
-          rollupOptions: {
-            input: fileURLToPath(new URL("../android/src/entry.tsx", import.meta.url)),
-          },
-        },
-      }
-    },
     async resolveId(source, importer, options) {
       if (source.startsWith(".") || source.startsWith("/")) return null
       if (!importer || !importer.includes("/android/src/")) return null
@@ -57,8 +48,11 @@ export default [
       const resolution = await this.resolve(source, appProxy, { skipSelf: true, ...options })
       return resolution
     },
-    transformIndexHtml() {
-      return undefined
+    transformIndexHtml(html) {
+      return html.replace(
+        'src="/src/entry.tsx"',
+        'src="../android/src/entry.tsx"',
+      )
     },
   },
   {

@@ -96,10 +96,9 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
   const counterZoom = () => (windows() && titlebarZoom() < 1 ? 1 / titlebarZoom() : 1)
   const minHeight = () => {
     const height = useV2Titlebar() ? v2TitlebarHeight : legacyTitlebarHeight
-    const sat = "var(--sat, 0px)"
-    if (mac()) return `calc(${height / zoom()}px + ${sat})`
-    if (windows()) return `calc(${height / Math.min(titlebarZoom(), 1)}px + ${sat})`
-    return `calc(${height}px + ${sat})`
+    if (mac()) return `${height / zoom()}px`
+    if (windows()) return `${height / Math.min(titlebarZoom(), 1)}px`
+    return `${height}px`
   }
   const windowsControlsWidth = () => `${windowsControlsBaseWidth / Math.max(titlebarZoom(), 1)}px`
 
@@ -232,8 +231,8 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
     <header
       classList={{
         "shrink-0 relative flex flex-row": true,
-        "h-9 bg-v2-background-bg-deep overflow-visible": useV2Titlebar(),
-        "h-10 bg-background-base overflow-hidden": !useV2Titlebar(),
+        "bg-v2-background-bg-deep overflow-visible": useV2Titlebar(),
+        "bg-background-base overflow-hidden": !useV2Titlebar(),
       }}
       style={{
         "min-height": minHeight(),

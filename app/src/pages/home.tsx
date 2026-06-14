@@ -1147,7 +1147,7 @@ function LegacyHome() {
   }
 
   return (
-    <div class="mx-auto mt-55 w-full md:w-auto px-4">
+    <div class="mx-auto mt-4 w-full md:w-auto px-4">
       <Logo class="md:w-xl opacity-12" />
       <Button
         size="large"

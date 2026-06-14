@@ -42,6 +42,8 @@ html, body {
 #root {
   height: 100%;
   overflow: hidden;
+  padding-top: var(--sat, 0px);
+  box-sizing: border-box;
 }
 
 /* Mobile breakpoint: hide desktop sidebar, show mobile nav */
@@ -56,6 +58,6 @@ html, body {
 
   [data-component="main-content"] {
     width: 100% !important;
-    height: calc(100dvh - var(--sab, 0px) - 56px) !important;
+    height: calc(100dvh - var(--sat, 0px) - var(--sab, 0px) - 56px) !important;
   }
 }

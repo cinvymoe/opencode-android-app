@@ -1,11 +1,10 @@
 /* Android-specific mobile styles */
 
-/* Safe area CSS custom properties from Capacitor */
 :root {
-  --sat: env(safe-area-inset-top);
-  --sab: env(safe-area-inset-bottom);
-  --sal: env(safe-area-inset-left);
-  --sar: env(safe-area-inset-right);
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
 }
 
 /* Disable text selection on non-input elements for touch */
@@ -42,8 +41,6 @@ html, body {
 #root {
   height: 100%;
   overflow: hidden;
-  padding-top: var(--sat, 0px);
-  box-sizing: border-box;
 }
 
 /* Mobile breakpoint: hide desktop sidebar, show mobile nav */
@@ -54,10 +51,5 @@ html, body {
 
   [data-component="mobile-tab-bar"] {
     display: flex !important;
-  }
-
-  [data-component="main-content"] {
-    width: 100% !important;
-    height: calc(100dvh - var(--sat, 0px) - var(--sab, 0px) - 56px) !important;
   }
 }

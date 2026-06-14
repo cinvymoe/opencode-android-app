@@ -1,5 +1,5 @@
-import type { Platform } from "../../app/src/context/platform"
-import { ServerConnection } from "../../app/src/context/server"
+import type { Platform } from "@/context/platform"
+import { ServerConnection } from "@/context/server"
 import { Preferences } from "@capacitor/preferences"
 import { Share } from "@capacitor/share"
 import { StatusBar, Style } from "@capacitor/status-bar"

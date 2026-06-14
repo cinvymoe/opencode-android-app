@@ -1,5 +1,5 @@
 import { onCleanup, onMount } from "solid-js"
-import { usePlatform } from "../../../app/src/context/platform"
+import { usePlatform } from "@/context/platform"
 import { useNavigate, useLocation } from "@solidjs/router"
 
 /**

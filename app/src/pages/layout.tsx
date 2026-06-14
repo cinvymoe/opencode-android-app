@@ -2357,7 +2357,7 @@ export default function Layout(props: ParentProps) {
     <Show
       when={!newDesign()}
       fallback={
-        <div class="relative bg-v2-background-bg-deep flex-1 min-h-0 min-w-0 flex flex-col select-none [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text">
+        <div class="relative bg-v2-background-bg-deep flex-1 min-h-0 min-w-0 flex flex-col select-none [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text" style={{ "padding-top": "var(--sat)", "padding-bottom": "var(--sab)" }}>
           {autoselecting() ?? ""}
           <Titlebar update={titlebarUpdate} />
           <SyncStatusBar status={serverSync.syncStatus} />
@@ -2372,7 +2372,7 @@ export default function Layout(props: ParentProps) {
         </div>
       }
     >
-      <div class="relative bg-background-base flex-1 min-h-0 min-w-0 flex flex-col select-none [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text">
+      <div class="relative bg-background-base flex-1 min-h-0 min-w-0 flex flex-col select-none [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text" style={{ "padding-top": "var(--sat)", "padding-bottom": "var(--sab)" }}>
         {autoselecting() ?? ""}
         <Titlebar update={titlebarUpdate} />
         <SyncStatusBar status={serverSync.syncStatus} />

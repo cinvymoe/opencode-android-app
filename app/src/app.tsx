@@ -216,13 +216,12 @@ function DraftProviders(props: ParentProps) {
   )
 }
 
-function RouterRoot(props: ParentProps<{ appChildren?: JSX.Element }>) {
+function RouterRoot(props: ParentProps<{ appChildren?: JSX.Element; mobileShell?: JSX.Element }>) {
   return (
     <AppShellProviders>
-      {/*<Suspense fallback={<Loading />}>*/}
       {props.appChildren}
       {props.children}
-      {/*</Suspense>*/}
+      {props.mobileShell}
     </AppShellProviders>
   )
 }
@@ -384,6 +383,7 @@ export function AppInterface(props: {
   servers?: Array<ServerConnection.Any>
   router?: Component<BaseRouterProps>
   disableHealthCheck?: boolean
+  mobileShell?: JSX.Element
 }) {
   return (
     <ServerProvider
@@ -401,7 +401,7 @@ export function AppInterface(props: {
                   <QueryProvider>
                     <ServerSDKProvider>
                       <ServerSyncProvider>
-                        <RouterRoot appChildren={props.children}>{routerProps.children}</RouterRoot>
+                        <RouterRoot appChildren={props.children} mobileShell={props.mobileShell}>{routerProps.children}</RouterRoot>
                       </ServerSyncProvider>
                     </ServerSDKProvider>
                   </QueryProvider>

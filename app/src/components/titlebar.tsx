@@ -99,7 +99,7 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
     const height = useV2Titlebar() ? v2TitlebarHeight : legacyTitlebarHeight
     if (mac()) return `${height / zoom()}px`
     if (windows()) return `${height / Math.min(titlebarZoom(), 1)}px`
-    if (android()) return `${height}px`
+    if (android()) return `calc(${height}px + var(--sat, 0px))`
     return undefined
   }
   const windowsControlsWidth = () => `${windowsControlsBaseWidth / Math.max(titlebarZoom(), 1)}px`
@@ -421,10 +421,11 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
 
             return (
               <div
-                class="h-full flex-1 overflow-hidden flex flex-row items-center gap-1.5 pr-3 pt-2"
+                class="h-full flex-1 overflow-hidden flex flex-row items-center gap-1.5 pr-3"
                 classList={{
                   "pl-2": mac(),
                   "pl-4": !mac(),
+                  "pt-2": !android(),
                 }}
               >
                 <ChannelIndicator />

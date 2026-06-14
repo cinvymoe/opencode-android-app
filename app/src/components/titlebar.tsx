@@ -232,15 +232,14 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
   return (
     <header
       classList={{
-        "shrink-0 relative flex flex-row": true,
+        "shrink-0 relative flex flex-col": true,
         "h-9 bg-v2-background-bg-deep overflow-visible": useV2Titlebar() && !android(),
         "h-10 bg-background-base overflow-hidden": !useV2Titlebar() && !android(),
         "bg-v2-background-bg-deep overflow-visible": useV2Titlebar() && android(),
-        "bg-background-base overflow-hidden": !useV2Titlebar() && android(),
+        "bg-background-base overflow-visible": !useV2Titlebar() && android(),
       }}
       style={{
         "min-height": minHeight(),
-        "padding-top": android() ? "var(--sat, 0px)" : undefined,
         "padding-left": mac() ? `${84 / zoom()}px` : 0,
         width: electronWindows() ? `env(titlebar-area-width, calc(100vw - ${windowsControlsWidth()}))` : undefined,
         "max-width": electronWindows()
@@ -252,6 +251,9 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
       onMouseDown={drag}
       onDblClick={maximize}
     >
+      <Show when={android()}>
+        <div class="shrink-0" style={{ height: "var(--sat, 0px)" }} />
+      </Show>
       <Switch>
         <Match when={useV2Titlebar()}>
           {(_) => {
@@ -553,7 +555,7 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
         </Match>
         <Match when>
           <div
-            class="grid h-full min-h-full w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center"
+            class="grid h-10 min-h-0 w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center"
             style={{ zoom: counterZoom() }}
           >
             <div

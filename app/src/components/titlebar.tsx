@@ -96,9 +96,10 @@ export function Titlebar(props: { update?: TitlebarUpdate }) {
   const counterZoom = () => (windows() && titlebarZoom() < 1 ? 1 / titlebarZoom() : 1)
   const minHeight = () => {
     const height = useV2Titlebar() ? v2TitlebarHeight : legacyTitlebarHeight
-    if (mac()) return `${height / zoom()}px`
-    if (windows()) return `${height / Math.min(titlebarZoom(), 1)}px`
-    return undefined
+    const sat = "var(--sat, 0px)"
+    if (mac()) return `calc(${height / zoom()}px + ${sat})`
+    if (windows()) return `calc(${height / Math.min(titlebarZoom(), 1)}px + ${sat})`
+    return `calc(${height}px + ${sat})`
   }
   const windowsControlsWidth = () => `${windowsControlsBaseWidth / Math.max(titlebarZoom(), 1)}px`
 

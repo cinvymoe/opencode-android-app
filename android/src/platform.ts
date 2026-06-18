@@ -82,9 +82,11 @@ export async function createAndroidPlatform(): Promise<Platform> {
     },
 
     async setStatusBarStyle(style: "dark" | "light") {
-      await StatusBar.setStyle({ style: style === "dark" ? Style.Light : Style.Dark }).catch((e) =>
-        console.warn("StatusBar.setStyle failed:", e),
-      )
+      setTimeout(async () => {
+        await StatusBar.setStyle({ style: style === "dark" ? Style.Light : Style.Dark }).catch((e) =>
+          console.warn("StatusBar.setStyle failed:", e),
+        )
+      }, 300)
     },
   }
 }

@@ -18,7 +18,9 @@ function setupStatusBarObserver(): void {
     if (!el) return
 
     const colorScheme = el.dataset.colorScheme
-    const style = colorScheme === "dark" ? Style.Light : Style.Dark
+    // Style.Dark  = light (white) text — use it on a dark background.
+    // Style.Light = dark  (black) text — use it on a light background.
+    const style = colorScheme === "dark" ? Style.Dark : Style.Light
     StatusBar.setStyle({ style }).catch((e) =>
       console.warn("StatusBar.setStyle failed:", e),
     )
@@ -101,7 +103,7 @@ export async function createAndroidPlatform(): Promise<Platform> {
     },
 
     async setStatusBarStyle(style: "dark" | "light") {
-      await StatusBar.setStyle({ style: style === "dark" ? Style.Light : Style.Dark })
+      await StatusBar.setStyle({ style: style === "dark" ? Style.Dark : Style.Light })
     },
   }
 }

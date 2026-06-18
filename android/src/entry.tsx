@@ -14,22 +14,13 @@ const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
 
 createAndroidPlatform().then((platform) => {
-  const server: ServerConnection.Http = {
-    type: "http",
-    authToken: false,
-    http: { url: "http://localhost:4096" },
-  }
-
   render(
     () => (
       <PlatformProvider value={platform}>
-        <AppBaseProviders onThemeApplied={(_, mode) => {
-          if ("setStatusBarStyle" in platform) platform.setStatusBarStyle!(mode)
-        }}>
+        <AppBaseProviders>
           <AppInterface
-            defaultServer={ServerConnection.Key.make("http://localhost:4096")}
-            servers={[server]}
-            disableHealthCheck
+            defaultServer={ServerConnection.Key.make("")}
+            disableHealthCheck={false}
             mobileShell={<><BackHandler /></>}
           />
         </AppBaseProviders>

@@ -12,6 +12,25 @@ function setupStatusBarObserver(): void {
   StatusBar.setOverlaysWebView({ overlay: true }).catch((e) =>
     console.warn("StatusBar.setOverlaysWebView failed:", e),
   )
+
+  const update = () => {
+    const el = document.documentElement
+    if (!el) return
+
+    const colorScheme = el.dataset.colorScheme
+    const style = colorScheme === "dark" ? Style.Light : Style.Dark
+    StatusBar.setStyle({ style }).catch((e) =>
+      console.warn("StatusBar.setStyle failed:", e),
+    )
+  }
+
+  update()
+
+  const observer = new MutationObserver(update)
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-color-scheme"],
+  })
 }
 
 export async function createAndroidPlatform(): Promise<Platform> {
@@ -82,11 +101,7 @@ export async function createAndroidPlatform(): Promise<Platform> {
     },
 
     async setStatusBarStyle(style: "dark" | "light") {
-      setTimeout(async () => {
-        await StatusBar.setStyle({ style: style === "dark" ? Style.Light : Style.Dark }).catch((e) =>
-          console.warn("StatusBar.setStyle failed:", e),
-        )
-      }, 300)
+      await StatusBar.setStyle({ style: style === "dark" ? Style.Light : Style.Dark })
     },
   }
 }

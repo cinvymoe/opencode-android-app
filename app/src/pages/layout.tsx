@@ -120,6 +120,7 @@ export default function Layout(props: ParentProps) {
   const layout = useLayout()
   const layoutReady = createMemo(() => layout.ready())
   const platform = usePlatform()
+  const android = createMemo(() => platform.platform === "android")
   const pickDirectory = useDirectoryPicker()
   const settings = useSettings()
   const server = useServer()
@@ -2436,9 +2437,12 @@ export default function Layout(props: ParentProps) {
               <div class="xl:hidden">
                 <div
                   classList={{
-                    "fixed inset-x-0 top-10 bottom-0 z-40 transition-opacity duration-200": true,
+                    "fixed inset-x-0 bottom-0 z-40 transition-opacity duration-200": true,
                     "opacity-100 pointer-events-auto": layout.mobileSidebar.opened(),
                     "opacity-0 pointer-events-none": !layout.mobileSidebar.opened(),
+                  }}
+                  style={{
+                    top: android() ? "calc(40px + var(--sat, 0px))" : "40px",
                   }}
                   onClick={(e) => {
                     if (e.target === e.currentTarget) layout.mobileSidebar.hide()
@@ -2448,9 +2452,12 @@ export default function Layout(props: ParentProps) {
                   aria-label={language.t("sidebar.nav.projectsAndSessions")}
                   data-component="sidebar-nav-mobile"
                   classList={{
-                    "@container fixed top-10 bottom-0 left-0 z-50 w-full max-w-[400px] overflow-hidden border-r border-border-weaker-base bg-background-base transition-transform duration-200 ease-out": true,
+                    "@container fixed bottom-0 left-0 z-50 w-full max-w-[400px] overflow-hidden border-r border-border-weaker-base bg-background-base transition-transform duration-200 ease-out": true,
                     "translate-x-0": layout.mobileSidebar.opened(),
                     "-translate-x-full": !layout.mobileSidebar.opened(),
+                  }}
+                  style={{
+                    top: android() ? "calc(40px + var(--sat, 0px))" : "40px",
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >

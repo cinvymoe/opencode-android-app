@@ -294,6 +294,7 @@ export function MessageTimeline(props: {
   const language = useLanguage()
   const { params, sessionKey } = useSessionKey()
   const platform = usePlatform()
+  const android = createMemo(() => platform.platform === "android")
 
   let virtualizer: VirtualizerHandle | undefined
   const sessionID = createMemo(() => params.id)
@@ -1291,7 +1292,7 @@ export function MessageTimeline(props: {
         onClick={props.onAutoScrollInteraction}
         class="relative min-w-0 w-full h-full"
         style={{
-          "--sticky-accordion-top": showHeader() ? "48px" : "0px",
+          "--sticky-accordion-top": showHeader() ? (android() ? "calc(48px + var(--sat, 0px))" : "48px") : "0px",
         }}
       >
         <Show when={showHeader()}>
@@ -1302,11 +1303,16 @@ export function MessageTimeline(props: {
             }}
             data-session-title
             classList={{
-              "sticky top-0 z-30 bg-[linear-gradient(to_bottom,var(--background-stronger)_48px,transparent)]": true,
+              "sticky top-0 z-30": true,
               "w-full": true,
               "pb-4": true,
               "pl-2 pr-3 md:pl-4 md:pr-3": true,
               "md:max-w-200 md:mx-auto 2xl:max-w-[1000px]": props.centered,
+            }}
+            style={{
+              background: android()
+                ? "linear-gradient(to bottom, var(--background-stronger) calc(48px + var(--sat, 0px)), transparent)"
+                : "linear-gradient(to bottom, var(--background-stronger) 48px, transparent)",
             }}
           >
             <Show when={workingStatus() !== "hidden" && settings.general.showSessionProgressBar()}>

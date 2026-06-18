@@ -41,3 +41,7 @@ android/android/capacitor-cordova-android-plugins/build/
 
 # Bun lock (regenerated on install)
 bun.lock
+
+# Local opencode skills (keep sync-upstream tracked)
+.opencode/skills/*/
+!.opencode/skills/sync-upstream/

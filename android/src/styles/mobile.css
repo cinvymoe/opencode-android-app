@@ -1,11 +1,7 @@
 /* Android-specific mobile styles */
 
-:root {
-  --sat: env(safe-area-inset-top, 0px);
-  --sab: env(safe-area-inset-bottom, 0px);
-  --sal: env(safe-area-inset-left, 0px);
-  --sar: env(safe-area-inset-right, 0px);
-}
+/* Safe-area insets are injected via JavaScript from MainActivity.java
+   to ensure accurate CSS-pixel values on all Android devices. */
 
 /* Disable text selection on non-input elements for touch */
 [data-platform="android"] .session-message {

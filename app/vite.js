@@ -48,11 +48,14 @@ export default [
       const resolution = await this.resolve(source, appProxy, { skipSelf: true, ...options })
       return resolution
     },
-    transformIndexHtml(html) {
-      return html.replace(
-        'src="/src/entry.tsx"',
-        'src="../android/src/entry.tsx"',
-      )
+    transformIndexHtml: {
+      order: "pre",
+      handler(html) {
+        return html.replace(
+          'src="/src/entry.tsx"',
+          'src="/src/_android_entry.tsx"',
+        )
+      },
     },
   },
   {

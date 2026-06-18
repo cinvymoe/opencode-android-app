@@ -45,3 +45,9 @@ bun.lock
 # Local opencode skills (keep sync-upstream tracked)
 .opencode/skills/*/
 !.opencode/skills/sync-upstream/
+
+# OpenCode session continuation files
+.omo/
+
+# Build artifacts
+app-debug.apk

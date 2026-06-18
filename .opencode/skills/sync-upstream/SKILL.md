@@ -28,6 +28,31 @@ Sync source code from the upstream [opencode monorepo](https://github.com/anomal
 | `packages/sdk/js/` | `sdk/` |
 | `patches/` | `patches/` |
 
+## Pre-Sync Checklist
+
+Before starting the sync, verify that Android patches are present and up-to-date:
+
+```bash
+cd android && ./apply-patches.sh check
+```
+
+Expected output:
+```
+🔍 Checking patch files...
+  ✓ 001-shared-android-support.patch
+  ✓ 002-android-specific.patch
+  ✓ 003-native-android.patch
+📦 Found 3 patch file(s)
+```
+
+If any patch is missing, run the create command to regenerate from current changes:
+
+```bash
+cd android && ./apply-patches.sh create
+```
+
+**Review the generated patches** before syncing to ensure they capture all intended Android modifications.
+
 ## Step 1: Fetch Upstream
 
 ```bash
@@ -147,150 +172,96 @@ rsync -av --delete "$REMAPDIR/sdk-src/" sdk/src/
 rsync -av --delete "$REMAPDIR/ui-src/" ui/src/
 ```
 
-**app/src/** — sync with backup (may contain android-specific code):
+**app/src/** — sync with backup and Android-only exclusions:
+
+> **Android-only files that do not exist upstream** must be excluded from rsync to prevent deletion. These files are maintained separately in this repo:
+> - `app/src/_android_entry.tsx` — Android-specific app entry point
+> - `app/src/_resolve_proxy.ts` — Android-specific module resolution proxy
+> - `app/src/context/sync-status.tsx` — Android sync status context
+> - `app/src/components/sync-status-bar.tsx` — Android sync status bar UI
+> - `app/src/hooks/use-refresh-action.ts` — Android refresh action hook
+> - `app/src/context/server-sync.tsx` — Android server sync modifications (visibilitychange handler)
+> - `app/src/context/server-sdk.tsx` — Android SSE status signal
+> - `app/src/context/global-sync/queue.ts` — Android queue draining signal
+> - `app/src/context/platform.tsx` — Android platform type extensions
 
 ```bash
 rsync -av --delete --backup --backup-dir=/tmp/opencode-app-backup \
+  --exclude='_android_entry.tsx' \
+  --exclude='_resolve_proxy.ts' \
   "$REMAPDIR/app-src/" app/src/
 ```
 
-## Step 6: Restore Android-Specific Code
+## Step 6: Apply Android Patches
 
-After rsync, restore android-specific modifications that were overwritten.
-
-### 6a. platform.tsx — Add `"android"` to PlatformName and Platform type
-
-In `app/src/context/platform.tsx`, after the upstream sync:
-
-1. Change `type PlatformName = "web" | "desktop"` → `type PlatformName = "web" | "desktop" | "android"`
-
-2. Add the android variant to the `Platform` union type:
-
-```typescript
-export type Platform = PlatformBase &
-  (
-    | { platform: "web"; os?: never }
-    | {
-        platform: "desktop"
-        os?: DesktopOS
-        openDirectoryPickerDialog(opts?: OpenDirectoryPickerOptions): Promise<PickerPaths>
-      }
-    | {
-        platform: "android"
-        os?: never
-        /** Share content via Android Intent */
-        share?(opts: { title?: string; text?: string; url?: string }): Promise<void>
-        /** Handle Android back button */
-        onBackPressed?(callback: () => boolean): () => void
-        /** Get safe area insets */
-        getSafeAreaInsets?(): { top: number; bottom: number; left: number; right: number }
-        /** Set status bar style */
-        setStatusBarStyle?(style: "dark" | "light"): Promise<void>
-      }
-  )
-```
-
-### 6b. Check other android-specific files
-
-Find what got overwritten and may need manual merging:
+After rsync, automatically apply Android-specific patches using `git apply --3way`. The `--3way` strategy uses patch context to find the correct location even when upstream has modified the same files.
 
 ```bash
-grep -rl "android\|capacitor\|VITE_PLATFORM" /tmp/opencode-app-backup/ 2>/dev/null
+echo "🚀 Applying Android patches..."
+
+PATCHES_DIR="android/patches"
+APPLIED=0
+FAILED=0
+
+for patch in "$PATCHES_DIR"/*.patch; do
+  if [ -f "$patch" ]; then
+    patch_name=$(basename "$patch")
+    echo "  📋 Applying $patch_name..."
+
+    if git apply --3way "$patch"; then
+      echo "    ✅ Applied successfully (3-way merge)"
+      ((APPLIED++))
+    else
+      echo "    ❌ Failed to apply (conflicts detected)"
+      ((FAILED++))
+    fi
+  fi
+done
+
+echo ""
+echo "📊 Results: $APPLIED applied, $FAILED failed"
 ```
 
-Key files to review (may have `isMobile` / `platform.platform === "android"` patterns that need re-applying):
+### Patch File Reference
 
-- `app/src/pages/session.tsx`
-- `app/src/pages/layout.tsx`
-- `app/src/components/titlebar.tsx`
-- `app/src/components/session/session-header.tsx`
+| Patch | Description | Files Modified |
+|---|---|---|
+| `001-shared-android-support.patch` | Shared `app/` modifications for Android UI support | `app/src/app.tsx`, `app/src/components/titlebar.tsx`, `app/src/pages/layout.tsx`, `app/src/pages/session/message-timeline.tsx`, `app/vite.js` |
+| `002-android-specific.patch` | Android-only source files (new or non-conflicting) | `android/package.json`, `android/src/entry.tsx`, `android/src/platform.ts`, `android/src/styles/mobile.css` |
+| `003-native-android.patch` | Native Android Java code modifications | `android/android/app/src/main/java/ai/opencode/app/MainActivity.java` |
 
-The upstream code significantly evolves these files each release, so android-specific UI accommodations (mobile-optimized layouts) may need to be rewritten rather than patch-applied.
+### Step 6a: If Patches Fail — Manual Restoration Fallback
 
-### 6c. Restore Android-specific features
+If any patch fails with `--3way`, use the backup files to restore Android-specific code manually:
 
-These features are android-only additions that upstream does not have. After syncing, re-apply them:
+```bash
+# List all backup files
+ls -la /tmp/opencode-app-backup/
 
-#### SSE Connection Status Signal (`app/src/context/server-sdk.tsx`)
-
-Add a `status` signal tracking SSE connection state:
-
-```typescript
-import { batch, createSignal, onCleanup, onMount } from "solid-js"
-
-type SdkStatus = "disconnected" | "connecting" | "connected"
-const [status, setStatus] = createSignal<SdkStatus>("disconnected")
+# Check for unmerged changes (conflict markers)
+grep -rl "<<<<<<<\|=======\|>>>>>>>" app/src/ 2>/dev/null
 ```
 
-Update the SSE stream lifecycle to set status:
-- `start()` → `setStatus("connecting")`
-- First event received → `setStatus("connected")`
-- Heartbeat timeout / stream error / `stop()` → `setStatus("disconnected")`
+For each failed patch, resolve conflicts using the backup as a reference:
 
-Export `status` in the return object.
-
-#### Queue Draining Signal (`app/src/context/global-sync/queue.ts`)
-
-Expose `isDraining` signal from the refresh queue:
-
-```typescript
-import { createSignal } from "solid-js"
-const [isDraining, setIsDraining] = createSignal(false)
-
-// In drain():
-setIsDraining(true)
-// ... drain logic ...
-setIsDraining(false)
-
-return { push, refresh, clear, dispose, isDraining }
+```bash
+# Example: restore titlebar.tsx from backup if 001 patch failed
+diff -u /tmp/opencode-app-backup/titlebar.tsx app/src/components/titlebar.tsx > /tmp/titlebar-conflict.diff
+# Review the diff, then apply the Android-specific changes manually
 ```
 
-#### Sync Status Context (`app/src/context/sync-status.tsx`)
+**Key files to check after patch failure** (use backups as reference):
+- `app/src/components/titlebar.tsx` — Android status bar padding, flex layout
+- `app/src/pages/layout.tsx` — Mobile sidebar positioning with safe area insets
+- `app/src/pages/session/message-timeline.tsx` — Sticky header with safe area insets
+- `app/src/app.tsx` — `AppBaseProviders` theme callback prop
+- `app/vite.js` — `transformIndexHtml` handler order and Android entry path
 
-Create a derived status combining SSE connection + queue draining:
+After manual resolution, verify the restored files compile correctly:
 
-```typescript
-import { createMemo } from "solid-js"
-
-export type SyncStatus = "idle" | "disconnected" | "connecting" | "syncing" | "synced"
-
-export function createSyncStatus(
-  serverStatus: () => "disconnected" | "connecting" | "connected",
-  isDraining: () => boolean
-): () => SyncStatus {
-  return createMemo<SyncStatus>(() => {
-    const status = serverStatus()
-    if (status === "disconnected") return "disconnected"
-    if (status === "connecting") return "connecting"
-    if (isDraining()) return "syncing"
-    return "idle"
-  })
-}
+```bash
+grep -n "android\|capacitor\|VITE_PLATFORM" app/src/components/titlebar.tsx app/src/pages/layout.tsx app/src/pages/session/message-timeline.tsx 2>/dev/null
 ```
-
-#### Sync Status Bar Component (`app/src/components/sync-status-bar.tsx`)
-
-Visual indicator for connection/sync state with auto-hide after sync completes.
-
-#### Refresh Action Hook (`app/src/hooks/use-refresh-action.ts`)
-
-Context-aware refresh: triggers bootstrap on Home, session sync on Session page.
-
-#### Visibility Change Handler (`app/src/context/server-sync.tsx`)
-
-In `onMount`, add a `visibilitychange` listener that triggers `queue.refresh()` when returning from background if not connected:
-
-```typescript
-makeEventListener(document, "visibilitychange", () => {
-  if (document.visibilityState !== "visible") return
-  const status = serverSDK.status()
-  if (status !== "connected") {
-    queue.refresh()
-  }
-})
-```
-
-Export `syncStatus` from `createServerSyncContextInner`.
 
 ## Step 7: Sync Config Files
 
@@ -443,3 +414,50 @@ node -e "const p=require('./package.json'); console.log('catalog entries:', Obje
 ### Build fails with type errors after sync
 
 Upstream package version bumps (e.g., `effect` 4.0.0-beta.66 → 4.0.0-beta.74) may require catalog updates. Check that the root `package.json` catalog matches the upstream root `package.json` `workspaces.catalog`.
+
+### Patch application fails with merge conflicts
+
+If `git apply --3way` fails:
+
+1. Check which files have conflicts:
+   ```bash
+   git status | grep -E "both modified|Unmerged"
+   ```
+
+2. For each conflicted file, use the backup to identify the Android-specific changes:
+   ```bash
+   diff -u /tmp/opencode-app-backup/$(basename $FILE) $FILE
+   ```
+
+3. Resolve conflicts manually, keeping the upstream changes while re-adding the Android-specific modifications.
+
+4. After resolving all conflicts, mark as resolved:
+   ```bash
+   git add -A
+   git status
+   ```
+
+5. Verify the build still works:
+   ```bash
+   VITE_PLATFORM=android bun run --cwd app build
+   ```
+
+### Android-only files were deleted by rsync
+
+If you forgot to use `--exclude` in Step 5 and Android-only files were deleted, restore them from the most recent backup or from git history:
+
+```bash
+# Check if files exist in git history
+git show HEAD:app/src/_android_entry.tsx > /tmp/_android_entry.tsx 2>/dev/null && echo "Found in HEAD"
+
+# Or restore from the rsync backup
+ls /tmp/opencode-app-backup/_android_entry.tsx 2>/dev/null && cp /tmp/opencode-app-backup/_android_entry.tsx app/src/
+```
+
+Re-apply the Android patches after restoring any deleted files:
+
+```bash
+cd android && ./apply-patches.sh apply
+```
+
+(End of file - total 349 lines)

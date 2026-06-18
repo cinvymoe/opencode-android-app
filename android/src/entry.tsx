@@ -6,7 +6,6 @@ import { AppBaseProviders, AppInterface } from "@/app"
 import { PlatformProvider } from "@/context/platform"
 import { createAndroidPlatform } from "./platform"
 import { ServerConnection } from "@/context/server"
-import { MobileTabBar } from "./components/mobile-tab-bar"
 import { BackHandler } from "./components/back-handler"
 
 document.documentElement.dataset.platform = "android"
@@ -15,14 +14,23 @@ const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
 
 createAndroidPlatform().then((platform) => {
+  const server: ServerConnection.Http = {
+    type: "http",
+    authToken: false,
+    http: { url: "http://localhost:4096" },
+  }
+
   render(
     () => (
       <PlatformProvider value={platform}>
-        <AppBaseProviders>
+        <AppBaseProviders onThemeApplied={(_, mode) => {
+          if ("setStatusBarStyle" in platform) platform.setStatusBarStyle!(mode)
+        }}>
           <AppInterface
-            defaultServer={ServerConnection.Key.make("")}
-            disableHealthCheck={false}
-            mobileShell={<><MobileTabBar /><BackHandler /></>}
+            defaultServer={ServerConnection.Key.make("http://localhost:4096")}
+            servers={[server]}
+            disableHealthCheck
+            mobileShell={<><BackHandler /></>}
           />
         </AppBaseProviders>
       </PlatformProvider>

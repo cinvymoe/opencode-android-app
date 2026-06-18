@@ -1,0 +1,95 @@
+diff --git a/android/package.json b/android/package.json
+index ee6fa90f7..5a391fe56 100644
+--- a/android/package.json
++++ b/android/package.json
+@@ -5,7 +5,7 @@
+   "private": true,
+   "type": "module",
+   "scripts": {
+-    "build": "bun run --cwd ../app build && cap sync android",
++    "build": "VITE_PLATFORM=android bun run --cwd ../app build && cap sync android",
+     "dev": "cap run android",
+     "sync": "cap sync android",
+     "open": "cap open android"
+diff --git a/android/src/entry.tsx b/android/src/entry.tsx
+index d40974b46..32257b89d 100644
+--- a/android/src/entry.tsx
++++ b/android/src/entry.tsx
+@@ -6,7 +6,6 @@ import { AppBaseProviders, AppInterface } from "@/app"
+ import { PlatformProvider } from "@/context/platform"
+ import { createAndroidPlatform } from "./platform"
+ import { ServerConnection } from "@/context/server"
+-import { MobileTabBar } from "./components/mobile-tab-bar"
+ import { BackHandler } from "./components/back-handler"
+ 
+ document.documentElement.dataset.platform = "android"
+@@ -15,14 +14,23 @@ const root = document.getElementById("root")
+ if (!root) throw new Error("Root element not found")
+ 
+ createAndroidPlatform().then((platform) => {
++  const server: ServerConnection.Http = {
++    type: "http",
++    authToken: false,
++    http: { url: "http://localhost:4096" },
++  }
++
+   render(
+     () => (
+       <PlatformProvider value={platform}>
+-        <AppBaseProviders>
++        <AppBaseProviders onThemeApplied={(_, mode) => {
++          if ("setStatusBarStyle" in platform) platform.setStatusBarStyle!(mode)
++        }}>
+           <AppInterface
+-            defaultServer={ServerConnection.Key.make("")}
+-            disableHealthCheck={false}
+-            mobileShell={<><MobileTabBar /><BackHandler /></>}
++            defaultServer={ServerConnection.Key.make("http://localhost:4096")}
++            servers={[server]}
++            disableHealthCheck
++            mobileShell={<><BackHandler /></>}
+           />
+         </AppBaseProviders>
+       </PlatformProvider>
+diff --git a/android/src/platform.ts b/android/src/platform.ts
+index 7d7a4acfa..5a35f8296 100644
+--- a/android/src/platform.ts
++++ b/android/src/platform.ts
+@@ -18,13 +18,18 @@ function setupStatusBarObserver(): void {
+     if (!el) return
+ 
+     const colorScheme = el.dataset.colorScheme
++    if (!colorScheme) {
++      setTimeout(update, 100)
++      return
++    }
++
+     const style = colorScheme === "dark" ? Style.Light : Style.Dark
+     StatusBar.setStyle({ style }).catch((e) =>
+       console.warn("StatusBar.setStyle failed:", e),
+     )
+   }
+ 
+-  update()
++  setTimeout(update, 0)
+ 
+   const observer = new MutationObserver(update)
+   observer.observe(document.documentElement, {
+diff --git a/android/src/styles/mobile.css b/android/src/styles/mobile.css
+index 5fb61eddb..af028a78d 100644
+--- a/android/src/styles/mobile.css
++++ b/android/src/styles/mobile.css
+@@ -1,11 +1,7 @@
+ /* Android-specific mobile styles */
+ 
+-:root {
+-  --sat: env(safe-area-inset-top, 0px);
+-  --sab: env(safe-area-inset-bottom, 0px);
+-  --sal: env(safe-area-inset-left, 0px);
+-  --sar: env(safe-area-inset-right, 0px);
+-}
++/* Safe-area insets are injected via JavaScript from MainActivity.java
++   to ensure accurate CSS-pixel values on all Android devices. */
+ 
+ /* Disable text selection on non-input elements for touch */
+ [data-platform="android"] .session-message {

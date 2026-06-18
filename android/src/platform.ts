@@ -18,13 +18,18 @@ function setupStatusBarObserver(): void {
     if (!el) return
 
     const colorScheme = el.dataset.colorScheme
+    if (!colorScheme) {
+      setTimeout(update, 100)
+      return
+    }
+
     const style = colorScheme === "dark" ? Style.Light : Style.Dark
     StatusBar.setStyle({ style }).catch((e) =>
       console.warn("StatusBar.setStyle failed:", e),
     )
   }
 
-  update()
+  setTimeout(update, 0)
 
   const observer = new MutationObserver(update)
   observer.observe(document.documentElement, {

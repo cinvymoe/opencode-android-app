@@ -226,12 +226,13 @@ function RouterRoot(props: ParentProps<{ appChildren?: JSX.Element; mobileShell?
   )
 }
 
-export function AppBaseProviders(props: ParentProps<{ locale?: Locale }>) {
+export function AppBaseProviders(props: ParentProps<{ locale?: Locale; onThemeApplied?: (theme: any, mode: "light" | "dark") => void }>) {
   return (
     <MetaProvider>
       <Font />
       <ThemeProvider
-        onThemeApplied={(_, mode) => {
+        onThemeApplied={(id, mode) => {
+          props.onThemeApplied?.(id, mode as "light" | "dark")
           void window.api?.setTitlebar?.({ mode })
         }}
       >

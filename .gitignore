@@ -51,3 +51,6 @@ bun.lock
 
 # Build artifacts
 app-debug.apk
+
+# Documentation
+docs/

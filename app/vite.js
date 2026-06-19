@@ -78,9 +78,27 @@ export default [
         // does NOT set CORS headers. The `crossorigin` attribute causes the WebView to
         // enforce CORS checks, which silently blocks module scripts from loading — resulting
         // in a white screen on Android devices.
-        return html
+        let result = html
           .replace(/(<script\s[^>]*?)crossorigin\s*/g, "$1")
           .replace(/(<link\s[^>]*?)crossorigin\s*/g, "$1")
+        // `100dvh` requires Chrome 108+. Older Android WebViews don't support it,
+        // causing the root div to have no height. Add a CSS fallback.
+        result = result.replace(
+          '<div id="root" class="flex flex-col h-dvh p-px">',
+          '<div id="root" class="flex flex-col h-screen p-px">',
+        )
+        return result
+      },
+    },
+  },
+  isAndroid && {
+    name: "opencode-android:diag",
+    enforce: "post",
+    transformIndexHtml: {
+      order: "post",
+      handler(html) {
+        const diag = `<script>(function(){var D=window._OC_DIAG=[];function L(m){D.push(m);try{console.log("[OC-DIAG] "+m)}catch(e){}}L("1-html-parse");document.addEventListener("DOMContentLoaded",function(){L("2-dom-ready");var r=document.getElementById("root");L("3-root-"+(r?"found":"MISSING"));if(r){r.innerHTML="[OC-DIAG] App loading...<br>"+D.join("<br>")}});window.onerror=function(m,s,l){L("ERR:"+m+" @"+s+":"+l);var r=document.getElementById("root");if(r){r.style.background="#1a0000";r.style.color="#ff6b6b";r.innerHTML="[JS-ERROR]<br>"+D.join("<br>")}};window.addEventListener("unhandledrejection",function(e){L("REJ:"+e.reason);var r=document.getElementById("root");if(r){r.style.background="#1a0000";r.style.color="#ff6b6b";r.innerHTML="[REJECT]<br>"+D.join("<br>")}})})()</script>`
+        return html.replace("<head>", "<head>" + diag)
       },
     },
   },

@@ -67,6 +67,23 @@ export default [
       )
     },
   },
+  isAndroid && {
+    name: "opencode-android:no-crossorigin",
+    enforce: "post",
+    transformIndexHtml: {
+      order: "post",
+      handler(html) {
+        // Vite adds `crossorigin` to <script type="module"> and <link rel="stylesheet"> tags.
+        // Capacitor's WebViewLocalServer intercepts requests via shouldInterceptRequest but
+        // does NOT set CORS headers. The `crossorigin` attribute causes the WebView to
+        // enforce CORS checks, which silently blocks module scripts from loading — resulting
+        // in a white screen on Android devices.
+        return html
+          .replace(/(<script\s[^>]*?)crossorigin\s*/g, "$1")
+          .replace(/(<link\s[^>]*?)crossorigin\s*/g, "$1")
+      },
+    },
+  },
   tailwindcss(),
   solidPlugin(),
 ]

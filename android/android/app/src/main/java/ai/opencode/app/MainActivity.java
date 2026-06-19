@@ -35,6 +35,17 @@ public class MainActivity extends BridgeActivity {
     public void onResume() {
         super.onResume();
         injectSafeAreaInsets();
+        ensureWebViewDebugging();
+    }
+
+    private boolean webViewDebugSet = false;
+
+    private void ensureWebViewDebugging() {
+        if (webViewDebugSet) return;
+        WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+        if (webView == null) return;
+        webViewDebugSet = true;
+        WebView.setWebContentsDebuggingEnabled(true);
     }
 
     private void injectSafeAreaInsets() {

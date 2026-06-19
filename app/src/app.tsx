@@ -370,8 +370,9 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
 
 function ServerKey(props: ParentProps) {
   const server = useServer()
+  const hasKey = createMemo(() => !!server.key || server.list.length === 0)
   return (
-    <Show when={server.key} keyed>
+    <Show when={hasKey()}>
       {props.children}
     </Show>
   )

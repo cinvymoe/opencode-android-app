@@ -91,17 +91,6 @@ export default [
       },
     },
   },
-  isAndroid && {
-    name: "opencode-android:diag",
-    enforce: "post",
-    transformIndexHtml: {
-      order: "post",
-      handler(html) {
-        const diag = `<script>(function(){var D=window._OC_DIAG=[];function L(m){D.push(m);try{console.log("[OC-DIAG] "+m)}catch(e){}}L("1-html-parse");document.addEventListener("DOMContentLoaded",function(){L("2-dom-ready");var r=document.getElementById("root");L("3-root-"+(r?"found":"MISSING"));if(r){r.innerHTML="[OC-DIAG] App loading...<br>"+D.join("<br>")}});window.onerror=function(m,s,l){L("ERR:"+m+" @"+s+":"+l);var r=document.getElementById("root");if(r){r.style.background="#1a0000";r.style.color="#ff6b6b";r.innerHTML="[JS-ERROR]<br>"+D.join("<br>")}};window.addEventListener("unhandledrejection",function(e){L("REJ:"+e.reason);var r=document.getElementById("root");if(r){r.style.background="#1a0000";r.style.color="#ff6b6b";r.innerHTML="[REJECT]<br>"+D.join("<br>")}})})()</script>`
-        return html.replace("<head>", "<head>" + diag)
-      },
-    },
-  },
   tailwindcss(),
   solidPlugin(),
 ]

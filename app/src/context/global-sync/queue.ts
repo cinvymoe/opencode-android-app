@@ -80,7 +80,6 @@ export function createRefreshQueue(input: QueueInput) {
   return {
     push,
     refresh,
-    isDraining,
     clear(directory: string) {
       queued.delete(key(directory))
     },
@@ -89,5 +88,6 @@ export function createRefreshQueue(input: QueueInput) {
       clearTimeout(timer)
       timer = undefined
     },
+    isDraining,
   }
 }

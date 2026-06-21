@@ -327,6 +327,9 @@ function ConnectionGate(props: ParentProps<{ disableHealthCheck?: boolean }>) {
 function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key: ServerConnection.Key) => void }) {
   const language = useLanguage()
   const server = useServer()
+  const platform = usePlatform()
+  const [editing, setEditing] = createSignal(false)
+  const [url, setUrl] = createSignal("")
   const others = () => server.list.filter((s) => ServerConnection.key(s) !== server.key)
   const name = createMemo(() => server.name || server.key)
   const serverToken = "\u0000server\u0000"
@@ -334,6 +337,25 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
 
   const timer = setInterval(() => props.onRetry?.(), 1000)
   onCleanup(() => clearInterval(timer))
+
+  const handleChangeServer = async () => {
+    const normalized = normalizeServerUrl(url())
+    if (!normalized) return
+    const oldKey = server.key
+    const conn = server.add({ type: "http", http: { url: normalized } })
+    if (conn) {
+      if (oldKey) server.remove(oldKey)
+      await platform.setDefaultServer?.(ServerConnection.key(conn))
+      setEditing(false)
+      props.onServerSelected?.(ServerConnection.key(conn))
+    }
+  }
+
+  const startEdit = () => {
+    const currentUrl = server.current?.http?.url ?? ""
+    setUrl(currentUrl)
+    setEditing(true)
+  }
 
   return (
     <div class="h-dvh w-screen flex flex-col items-center justify-center bg-background-base gap-6 p-6">
@@ -346,7 +368,27 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
         </p>
         <p class="mt-1 text-12-regular text-text-weak">{language.t("app.server.retrying")}</p>
       </div>
-      <Show when={others().length > 0}>
+      <Show when={editing()}>
+        <div class="flex flex-col gap-3 w-full max-w-sm">
+          <TextField
+            type="text"
+            label={language.t("dialog.server.add.url")}
+            placeholder={language.t("dialog.server.add.placeholder")}
+            value={url()}
+            onChange={setUrl}
+            onKeyDown={(e: KeyboardEvent) => {
+              if (e.key === "Enter" && !e.isComposing) {
+                e.preventDefault()
+                handleChangeServer()
+              }
+            }}
+          />
+          <Button variant="primary" onClick={handleChangeServer}>
+            {language.t("dialog.server.add.button")}
+          </Button>
+        </div>
+      </Show>
+      <Show when={!editing() && others().length > 0}>
         <div class="flex flex-col gap-2 w-full max-w-sm">
           <span class="text-12-regular text-text-base text-center">{language.t("app.server.otherServers")}</span>
           <div class="flex flex-col gap-1 bg-surface-base rounded-lg p-2">
@@ -366,6 +408,15 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
             </For>
           </div>
         </div>
+      </Show>
+      <Show when={!editing()}>
+        <button
+          type="button"
+          class="text-12-regular text-text-weak hover:text-text-base transition-colors"
+          onClick={startEdit}
+        >
+          {language.t("dialog.server.add.title")}
+        </button>
       </Show>
     </div>
   )

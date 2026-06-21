@@ -40,7 +40,9 @@ import { ModelsProvider } from "@/context/models"
 import { NotificationProvider } from "@/context/notification"
 import { PermissionProvider } from "@/context/permission"
 import { PromptProvider } from "@/context/prompt"
-import { ServerConnection, ServerProvider, serverName, useServer } from "@/context/server"
+import { Button } from "@opencode-ai/ui/button"
+import { TextField } from "@opencode-ai/ui/text-field"
+import { ServerConnection, normalizeServerUrl, ServerProvider, serverName, useServer } from "@/context/server"
 import { SettingsProvider, useSettings } from "@/context/settings"
 import { TerminalProvider } from "@/context/terminal"
 import { TabsProvider, useTabs, type DraftTab } from "@/context/tabs"
@@ -368,12 +370,54 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
   )
 }
 
+function NoServerConfigured() {
+  const language = useLanguage()
+  const server = useServer()
+  const [url, setUrl] = createSignal("")
+
+  const handleSubmit = () => {
+    const normalized = normalizeServerUrl(url())
+    if (!normalized) return
+    server.add({ type: "http", http: { url: normalized } })
+  }
+
+  return (
+    <div class="h-dvh w-screen flex flex-col items-center justify-center bg-background-base gap-6 p-6">
+      <div class="flex flex-col items-center max-w-md w-full gap-4">
+        <Splash class="w-12 h-15 mb-2" />
+        <p class="text-16-medium text-text-strong text-center">{language.t("dialog.server.add.title")}</p>
+        <div class="w-full flex flex-col gap-3">
+          <TextField
+            type="text"
+            label={language.t("dialog.server.add.url")}
+            placeholder={language.t("dialog.server.add.placeholder")}
+            value={url()}
+            autofocus
+            onChange={setUrl}
+            onKeyDown={(e: KeyboardEvent) => {
+              if (e.key === "Enter" && !e.isComposing) {
+                e.preventDefault()
+                handleSubmit()
+              }
+            }}
+          />
+          <Button variant="primary" onClick={handleSubmit}>
+            {language.t("dialog.server.add.button")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ServerKey(props: ParentProps) {
   const server = useServer()
   const hasKey = createMemo(() => !!server.key || server.list.length === 0)
   return (
     <Show when={hasKey()}>
-      {props.children}
+      <Show when={server.current} fallback={<NoServerConfigured />}>
+        {props.children}
+      </Show>
     </Show>
   )
 }

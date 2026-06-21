@@ -265,11 +265,11 @@ function DraftProviders(props: ParentProps) {
 
 function RouterRoot(props: ParentProps<{ appChildren?: JSX.Element; mobileShell?: JSX.Element }>) {
   return (
-    <ServerScopedShell>
+    <>
       {props.appChildren}
       {props.children}
       {props.mobileShell}
-    </ServerScopedShell>
+    </>
   )
 }
 

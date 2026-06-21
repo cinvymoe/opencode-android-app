@@ -330,6 +330,8 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
   const platform = usePlatform()
   const [editing, setEditing] = createSignal(false)
   const [url, setUrl] = createSignal("")
+  const [username, setUsername] = createSignal("")
+  const [password, setPassword] = createSignal("")
   const others = () => server.list.filter((s) => ServerConnection.key(s) !== server.key)
   const name = createMemo(() => server.name || server.key)
   const serverToken = "\u0000server\u0000"
@@ -342,7 +344,12 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
     const normalized = normalizeServerUrl(url())
     if (!normalized) return
     const oldKey = server.key
-    const conn = server.add({ type: "http", http: { url: normalized } })
+    const http: ServerConnection.HttpBase = { url: normalized }
+    const u = username()
+    const p = password()
+    if (u) http.username = u
+    if (p) http.password = p
+    const conn = server.add({ type: "http", http })
     if (conn) {
       if (oldKey) server.remove(oldKey)
       await platform.setDefaultServer?.(ServerConnection.key(conn))
@@ -354,6 +361,8 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
   const startEdit = () => {
     const currentUrl = server.current?.http?.url ?? ""
     setUrl(currentUrl)
+    setUsername(server.current?.http?.username ?? "")
+    setPassword(server.current?.http?.password ?? "")
     setEditing(true)
   }
 
@@ -383,6 +392,34 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
               }
             }}
           />
+          <div class="grid grid-cols-2 gap-2">
+            <TextField
+              type="text"
+              label={language.t("dialog.server.add.username")}
+              placeholder={language.t("dialog.server.add.usernamePlaceholder")}
+              value={username()}
+              onChange={setUsername}
+              onKeyDown={(e: KeyboardEvent) => {
+                if (e.key === "Enter" && !e.isComposing) {
+                  e.preventDefault()
+                  handleChangeServer()
+                }
+              }}
+            />
+            <TextField
+              type="password"
+              label={language.t("dialog.server.add.password")}
+              placeholder={language.t("dialog.server.add.passwordPlaceholder")}
+              value={password()}
+              onChange={setPassword}
+              onKeyDown={(e: KeyboardEvent) => {
+                if (e.key === "Enter" && !e.isComposing) {
+                  e.preventDefault()
+                  handleChangeServer()
+                }
+              }}
+            />
+          </div>
           <Button variant="primary" onClick={handleChangeServer}>
             {language.t("dialog.server.add.button")}
           </Button>
@@ -427,18 +464,25 @@ function NoServerConfigured() {
   const server = useServer()
   const platform = usePlatform()
   const [url, setUrl] = createSignal("")
+  const [username, setUsername] = createSignal("")
+  const [password, setPassword] = createSignal("")
 
   const handleSubmit = async () => {
     const normalized = normalizeServerUrl(url())
     if (!normalized) return
-    const conn = server.add({ type: "http", http: { url: normalized } })
+    const http: ServerConnection.HttpBase = { url: normalized }
+    const u = username()
+    const p = password()
+    if (u) http.username = u
+    if (p) http.password = p
+    const conn = server.add({ type: "http", http })
     if (conn) {
       await platform.setDefaultServer?.(ServerConnection.key(conn))
     }
   }
 
   return (
-    <div class="h-dvh w-screen flex flex-col items-center justify-center bg-background-base gap-6 p-6">
+    <div class="h-dvw w-screen flex flex-col items-center justify-center bg-background-base gap-6 p-6">
       <div class="flex flex-col items-center max-w-md w-full gap-4">
         <Splash class="w-12 h-15 mb-2" />
         <p class="text-16-medium text-text-strong text-center">{language.t("dialog.server.add.title")}</p>
@@ -457,6 +501,34 @@ function NoServerConfigured() {
               }
             }}
           />
+          <div class="grid grid-cols-2 gap-2">
+            <TextField
+              type="text"
+              label={language.t("dialog.server.add.username")}
+              placeholder={language.t("dialog.server.add.usernamePlaceholder")}
+              value={username()}
+              onChange={setUsername}
+              onKeyDown={(e: KeyboardEvent) => {
+                if (e.key === "Enter" && !e.isComposing) {
+                  e.preventDefault()
+                  handleSubmit()
+                }
+              }}
+            />
+            <TextField
+              type="password"
+              label={language.t("dialog.server.add.password")}
+              placeholder={language.t("dialog.server.add.passwordPlaceholder")}
+              value={password()}
+              onChange={setPassword}
+              onKeyDown={(e: KeyboardEvent) => {
+                if (e.key === "Enter" && !e.isComposing) {
+                  e.preventDefault()
+                  handleSubmit()
+                }
+              }}
+            />
+          </div>
           <Button variant="primary" onClick={handleSubmit}>
             {language.t("dialog.server.add.button")}
           </Button>

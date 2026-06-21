@@ -2,24 +2,60 @@ package ai.opencode.app;
 
 import android.os.Bundle;
 import android.view.View;
-import android.view.WindowInsets;
+import android.webkit.WebView;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+    private int lastStatusBarHeightCss = -1;
+    private int lastNavBarHeightCss = -1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
-        View rootView = findViewById(android.R.id.content);
-        rootView.setOnApplyWindowInsetsListener((v, insets) -> {
-            int top = insets.getInsets(WindowInsets.Type.statusBars()).top;
-            int bottom = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
-            int left = insets.getInsets(WindowInsets.Type.systemBars()).left;
-            int right = insets.getInsets(WindowInsets.Type.systemBars()).right;
-            v.setPadding(left, top, right, bottom);
+        View decorView = getWindow().getDecorView();
+        decorView.setOnApplyWindowInsetsListener((v, insets) -> {
+            WindowInsetsCompat compat = WindowInsetsCompat.toWindowInsetsCompat(insets, v);
+            int statusBarHeight = compat.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            int navBarHeight = compat.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+
+            float density = getResources().getDisplayMetrics().density;
+            lastStatusBarHeightCss = Math.round(statusBarHeight / density);
+            lastNavBarHeightCss = Math.round(navBarHeight / density);
+
+            injectSafeAreaInsets();
             return insets;
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        injectSafeAreaInsets();
+        ensureWebViewDebugging();
+    }
+
+    private boolean webViewDebugSet = false;
+
+    private void ensureWebViewDebugging() {
+        if (webViewDebugSet) return;
+        WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+        if (webView == null) return;
+        webViewDebugSet = true;
+        WebView.setWebContentsDebuggingEnabled(true);
+    }
+
+    private void injectSafeAreaInsets() {
+        if (lastStatusBarHeightCss < 0) return;
+        WebView webView = getBridge().getWebView();
+        if (webView == null) return;
+        webView.evaluateJavascript(
+            "document.documentElement.style.setProperty('--sat','" + lastStatusBarHeightCss + "px');" +
+            "document.documentElement.style.setProperty('--sab','" + lastNavBarHeightCss + "px');",
+            null
+        );
     }
 }

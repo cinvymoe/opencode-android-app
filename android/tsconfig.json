@@ -1,5 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
+  "references": [{ "path": "../app" }],
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
@@ -8,7 +9,16 @@
     "strict": true,
     "skipLibCheck": true,
     "outDir": "dist",
-    "rootDir": "."
+    "composite": true,
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "paths": {
+      "@/*": ["../app/src/*"]
+    }
   },
-  "include": ["capacitor.config.ts"]
+  "include": ["capacitor.config.ts", "src", "package.json"],
+  "exclude": ["android", "node_modules"]
 }

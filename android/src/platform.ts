@@ -1,5 +1,5 @@
-import type { Platform } from "../../app/src/context/platform"
-import { ServerConnection } from "../../app/src/context/server"
+import type { Platform } from "@/context/platform"
+import { ServerConnection } from "@/context/server"
 import { Preferences } from "@capacitor/preferences"
 import { Share } from "@capacitor/share"
 import { StatusBar, Style } from "@capacitor/status-bar"
@@ -8,7 +8,36 @@ import pkg from "../package.json"
 
 const DEFAULT_SERVER_KEY = "opencode.android.defaultServer"
 
+function setupStatusBarObserver(): void {
+  StatusBar.setOverlaysWebView({ overlay: true }).catch((e) =>
+    console.warn("StatusBar.setOverlaysWebView failed:", e),
+  )
+
+  const update = () => {
+    const el = document.documentElement
+    if (!el) return
+
+    const colorScheme = el.dataset.colorScheme
+    // Style.Dark  = light (white) text — use it on a dark background.
+    // Style.Light = dark  (black) text — use it on a light background.
+    const style = colorScheme === "dark" ? Style.Dark : Style.Light
+    StatusBar.setStyle({ style }).catch((e) =>
+      console.warn("StatusBar.setStyle failed:", e),
+    )
+  }
+
+  update()
+
+  const observer = new MutationObserver(update)
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-color-scheme"],
+  })
+}
+
 export async function createAndroidPlatform(): Promise<Platform> {
+  setupStatusBarObserver()
+
   return {
     platform: "android",
     version: pkg.version,

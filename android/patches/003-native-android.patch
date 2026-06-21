@@ -1,0 +1,22 @@
+diff --git a/android/android/app/src/main/java/ai/opencode/app/MainActivity.java b/android/android/app/src/main/java/ai/opencode/app/MainActivity.java
+index 6d4479c11..d3d9dd9c9 100644
+--- a/android/android/app/src/main/java/ai/opencode/app/MainActivity.java
++++ b/android/android/app/src/main/java/ai/opencode/app/MainActivity.java
+@@ -19,11 +19,15 @@ public class MainActivity extends BridgeActivity {
+             int statusBarHeight = compat.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+             int navBarHeight = compat.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+ 
++            float density = getResources().getDisplayMetrics().density;
++            int statusBarHeightCss = Math.round(statusBarHeight / density);
++            int navBarHeightCss = Math.round(navBarHeight / density);
++
+             WebView webView = getBridge().getWebView();
+             if (webView != null) {
+                 webView.post(() -> webView.evaluateJavascript(
+-                    "document.documentElement.style.setProperty('--sat','" + statusBarHeight + "px');" +
+-                    "document.documentElement.style.setProperty('--sab','" + navBarHeight + "px');",
++                    "document.documentElement.style.setProperty('--sat','" + statusBarHeightCss + "px');" +
++                    "document.documentElement.style.setProperty('--sab','" + navBarHeightCss + "px');",
+                     null
+                 ));
+             }

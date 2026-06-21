@@ -16,7 +16,7 @@ type OpenAttachmentPickerOptions = {
   defaultPath?: string
 }
 type SaveFilePickerOptions = { title?: string; defaultPath?: string }
-type PlatformName = "web" | "desktop" | "android"
+type PlatformName = "web" | "desktop"
 type DesktopOS = "macos" | "windows" | "linux"
 
 export type FatalRendererErrorLog = {
@@ -54,6 +54,9 @@ type PlatformBase = {
     opts: OpenAttachmentPickerOptions,
     onFile: (file: File) => Promise<unknown>,
   ): Promise<void>
+
+  /** Resolve the native source path for a desktop File. */
+  getPathForFile?(file: File): string
 
   /** Open a native save file picker dialog (desktop only) */
   saveFilePickerDialog?(opts?: SaveFilePickerOptions): Promise<string | null>
@@ -117,22 +120,6 @@ export type Platform = PlatformBase &
         platform: "desktop"
         os?: DesktopOS
         openDirectoryPickerDialog(opts?: OpenDirectoryPickerOptions): Promise<PickerPaths>
-      }
-    | {
-        platform: "android"
-        os?: never
-        /** Open directory picker dialog (server-backed on android) */
-        openDirectoryPickerDialog?(opts?: OpenDirectoryPickerOptions): Promise<PickerPaths>
-        /** Open native file picker dialog (android only) */
-        openFilePickerDialog?(opts?: OpenAttachmentPickerOptions): Promise<PickerPaths>
-        /** Share content via Android Intent (android only) */
-        share?(opts: { title?: string; text?: string; url?: string }): Promise<void>
-        /** Handle Android back button (android only) */
-        onBackPressed?(callback: () => boolean): () => void
-        /** Get safe area insets (android only) */
-        getSafeAreaInsets?(): { top: number; bottom: number; left: number; right: number }
-        /** Set status bar style (android only) */
-        setStatusBarStyle?(style: "dark" | "light"): Promise<void>
       }
   )
 

@@ -1,12 +1,7 @@
 /* Android-specific mobile styles */
 
-/* Safe area CSS custom properties from Capacitor */
-:root {
-  --sat: env(safe-area-inset-top);
-  --sab: env(safe-area-inset-bottom);
-  --sal: env(safe-area-inset-left);
-  --sar: env(safe-area-inset-right);
-}
+/* Safe-area insets are injected via JavaScript from MainActivity.java
+   to ensure accurate CSS-pixel values on all Android devices. */
 
 /* Disable text selection on non-input elements for touch */
 [data-platform="android"] .session-message {
@@ -52,10 +47,5 @@ html, body {
 
   [data-component="mobile-tab-bar"] {
     display: flex !important;
-  }
-
-  [data-component="main-content"] {
-    width: 100% !important;
-    height: calc(100dvh - var(--sab, 0px) - 56px) !important;
   }
 }

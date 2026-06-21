@@ -8,9 +8,18 @@
       "dependsOn": [],
       "outputs": ["dist/**"]
     },
-    "test:ci": {
-      "outputs": [".artifacts/unit/junit.xml"],
+    "opencode#test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
       "passThroughEnv": ["*"]
+    },
+    "@opencode-ai/app#test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@opencode-ai/ui#test": {
+      "dependsOn": ["^build"],
+      "outputs": []
     }
   }
 }

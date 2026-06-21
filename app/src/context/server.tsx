@@ -277,7 +277,7 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
       })
     }
 
-    const isReady = createMemo(() => ready() && (!!state.active || allServers().length === 0))
+    const isReady = createMemo(() => ready())
 
     const scope = (key = state.active) => ServerScope.fromServerKey(key, props.canonicalLocalServer)
     const projects = createServerProjects({ scope, store, setStore })

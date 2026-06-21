@@ -36,6 +36,7 @@ import { GlobalProvider } from "@/context/global"
 import { HighlightsProvider } from "@/context/highlights"
 import { LanguageProvider, type Locale, useLanguage } from "@/context/language"
 import { LayoutProvider } from "@/context/layout"
+import { usePlatform } from "@/context/platform"
 import { ModelsProvider } from "@/context/models"
 import { NotificationProvider } from "@/context/notification"
 import { PermissionProvider } from "@/context/permission"
@@ -373,12 +374,16 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
 function NoServerConfigured() {
   const language = useLanguage()
   const server = useServer()
+  const platform = usePlatform()
   const [url, setUrl] = createSignal("")
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const normalized = normalizeServerUrl(url())
     if (!normalized) return
-    server.add({ type: "http", http: { url: normalized } })
+    const conn = server.add({ type: "http", http: { url: normalized } })
+    if (conn) {
+      await platform.setDefaultServer?.(ServerConnection.key(conn))
+    }
   }
 
   return (

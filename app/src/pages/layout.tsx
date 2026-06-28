@@ -36,6 +36,8 @@ import { useProviders } from "@/hooks/use-providers"
 import { toaster } from "@opencode-ai/ui/toast"
 import { setV2Toast, showToast, ToastRegion } from "@/utils/toast"
 import { useServerSDK } from "@/context/server-sdk"
+import { createSyncStatus } from "@/context/sync-status"
+import { SyncStatusBar } from "@/components/sync-status-bar"
 import { clearWorkspaceTerminals } from "@/context/terminal"
 import { dropSessionCaches, pickSessionCacheEvictions } from "@/context/global-sync/session-cache"
 import {
@@ -132,6 +134,10 @@ export default function Layout(props: ParentProps) {
   const command = useCommand()
   const theme = useTheme()
   const language = useLanguage()
+  const syncStatus = createSyncStatus(
+    () => serverSDK().status(),
+    () => serverSync().isDraining(),
+  )
   const newDesign = createMemo(() => settings.general.newLayoutDesigns())
   createEffect(() => setV2Toast(newDesign()))
   const initialDirectory = decode64(params.dir)
@@ -2362,6 +2368,9 @@ export default function Layout(props: ParentProps) {
         <div class="relative bg-v2-background-bg-deep flex-1 min-h-0 min-w-0 flex flex-col select-none [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text" style={{ "padding-bottom": "var(--sab)" }}>
           {autoselecting() ?? ""}
           <Titlebar update={titlebarUpdate} />
+          <Show when={android()}>
+            <SyncStatusBar status={syncStatus} language={language} />
+          </Show>
           <main class="flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-col items-start contain-strict">
             <Show when={!autoselecting.loading} fallback={<div class="size-full" />}>
               {props.children}
@@ -2376,6 +2385,9 @@ export default function Layout(props: ParentProps) {
       <div class="relative bg-background-base flex-1 min-h-0 min-w-0 flex flex-col select-none [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text" style={{ "padding-bottom": "var(--sab)" }}>
         {autoselecting() ?? ""}
         <Titlebar update={titlebarUpdate} />
+        <Show when={android()}>
+          <SyncStatusBar status={syncStatus} language={language} />
+        </Show>
         <Show when={updateVersion() !== undefined}>
           <UpdateAvailableToast version={updateVersion() ?? ""} install={installUpdate} language={language} />
         </Show>

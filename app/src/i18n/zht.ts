@@ -919,4 +919,8 @@ export const dict = {
   "error.childStore.persistedProjectIconCreateFailed": "建立持續性專案圖示失敗",
   "error.childStore.storeCreateFailed": "建立儲存區失敗",
   "terminal.connectionLost.abnormalClose": "WebSocket 異常關閉：{{code}}",
+  "sync.status.disconnected": "連線已斷開",
+  "sync.status.connecting": "重新連線中…",
+  "sync.status.syncing": "同步中…",
+  "sync.status.synced": "已同步",
 } satisfies Partial<Record<Keys, string>>

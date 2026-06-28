@@ -23,12 +23,12 @@ export function useRefreshAction() {
       const route = layout.route()
 
       if (route.type === "home") {
-        await queryClient.refetchQueries({ queryKey: [serverSDK.scope, "bootstrap"] })
+        await queryClient.refetchQueries({ queryKey: [serverSDK().scope, "bootstrap"] })
         return
       }
 
       if (route.type === "session") {
-        const dirSync = serverSync.createDirSyncContext(route.dir)
+        const dirSync = serverSync().createDirSyncContext(route.dir)
         await Promise.all([
           dirSync.session.sync(route.sessionId, { force: true }),
           dirSync.session.diff(route.sessionId, { force: true }),
@@ -38,7 +38,7 @@ export function useRefreshAction() {
       }
 
       if ("dir" in route && route.dir) {
-        await serverSync.project.loadSessions(route.dir as string)
+        await serverSync().project.loadSessions(route.dir as string)
         return
       }
     } catch (error) {

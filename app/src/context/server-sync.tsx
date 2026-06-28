@@ -487,6 +487,7 @@ export function createServerSyncContextInner(serverSDK: ServerSDK) {
     // bootstrap,
     updateConfig: updateConfigMutation.mutateAsync,
     project: projectApi,
+    isDraining: queue.isDraining,
     todo: {
       set: setSessionTodo,
     },

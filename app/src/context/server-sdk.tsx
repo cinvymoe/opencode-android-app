@@ -2,7 +2,7 @@ import type { Event } from "@opencode-ai/sdk/v2/client"
 import { createSimpleContext } from "@opencode-ai/ui/context"
 import { createGlobalEmitter } from "@solid-primitives/event-bus"
 import { makeEventListener } from "@solid-primitives/event-listener"
-import { type Accessor, batch, createMemo, onCleanup, onMount } from "solid-js"
+import { type Accessor, batch, createMemo, createSignal, onCleanup, onMount } from "solid-js"
 import { createSdkForServer } from "@/utils/server"
 import { useLanguage } from "./language"
 import { usePlatform } from "./platform"
@@ -128,6 +128,9 @@ function createServerSdkContextBase(server: ServerConnection.Any, scope: ServerS
     timer = setTimeout(flush, Math.max(0, FLUSH_FRAME_MS - elapsed))
   }
 
+  type SdkStatus = "disconnected" | "connecting" | "connected"
+  const [status, setStatus] = createSignal<SdkStatus>("disconnected")
+
   let streamErrorLogged = false
   const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
   let attempt: AbortController | undefined
@@ -141,6 +144,7 @@ function createServerSdkContextBase(server: ServerConnection.Any, scope: ServerS
     lastEventAt = Date.now()
     if (heartbeat) clearTimeout(heartbeat)
     heartbeat = setTimeout(() => {
+      setStatus("disconnected")
       attempt?.abort()
     }, HEARTBEAT_TIMEOUT_MS)
   }
@@ -153,6 +157,7 @@ function createServerSdkContextBase(server: ServerConnection.Any, scope: ServerS
   const start = () => {
     if (started) return run
     started = true
+    setStatus("connecting")
     const active = ++generation
     const previous = run
     const current = (async () => {
@@ -180,10 +185,15 @@ function createServerSdkContextBase(server: ServerConnection.Any, scope: ServerS
             },
           })
           let yielded = Date.now()
+          let connectedThisAttempt = false
           resetHeartbeat()
           for await (const event of events.stream) {
             resetHeartbeat()
             streamErrorLogged = false
+            if (!connectedThisAttempt) {
+              connectedThisAttempt = true
+              setStatus("connected")
+            }
             const directory = event.directory ?? "global"
             if (event.payload.type === "sync") {
               continue
@@ -212,13 +222,16 @@ function createServerSdkContextBase(server: ServerConnection.Any, scope: ServerS
             await wait(0)
           }
         } catch (error) {
-          if (!isStreamClosed(error, attempt?.signal) && !streamErrorLogged) {
-            streamErrorLogged = true
-            console.error("[global-sdk] event stream failed", {
-              url: server.http.url,
-              fetch: eventFetch ? "platform" : "webview",
-              error,
-            })
+          if (!isStreamClosed(error, attempt?.signal)) {
+            setStatus("disconnected")
+            if (!streamErrorLogged) {
+              streamErrorLogged = true
+              console.error("[global-sdk] event stream failed", {
+                url: server.http.url,
+                fetch: eventFetch ? "platform" : "webview",
+                error,
+              })
+            }
           }
         } finally {
           abort.signal.removeEventListener("abort", onAbort)
@@ -240,6 +253,7 @@ function createServerSdkContextBase(server: ServerConnection.Any, scope: ServerS
 
   const stop = () => {
     started = false
+    setStatus("disconnected")
     generation++
     attempt?.abort()
     clearHeartbeat()
